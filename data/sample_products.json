@@ -1,0 +1,67 @@
+﻿{
+  "query": "demo",
+  "fetched_at": "2026-02-07T00:00:00Z",
+  "count": 5,
+  "products": [
+    {
+      "id": "MLA-DEMO-001",
+      "title": "Notebook Lenovo IdeaPad 15.6 8GB 256GB SSD",
+      "price": 899999,
+      "original_price": 1099999,
+      "discount_pct": 18.18,
+      "currency_id": "ARS",
+      "permalink": "https://www.mercadolibre.com.ar/",
+      "thumbnail": "https://http2.mlstatic.com/D_NQ_NP_2X_968662-MLA75723846538_042024-F.webp",
+      "condition": "new",
+      "seller": "Tienda Demo"
+    },
+    {
+      "id": "MLA-DEMO-002",
+      "title": "Auriculares Bluetooth Noise Cancelling",
+      "price": 129999,
+      "original_price": 179999,
+      "discount_pct": 27.78,
+      "currency_id": "ARS",
+      "permalink": "https://www.mercadolibre.com.ar/",
+      "thumbnail": "https://http2.mlstatic.com/D_NQ_NP_2X_975417-MLA74359421054_022024-F.webp",
+      "condition": "new",
+      "seller": "Audio Demo"
+    },
+    {
+      "id": "MLA-DEMO-003",
+      "title": "Celular Samsung Galaxy 128GB",
+      "price": 599999,
+      "original_price": 699999,
+      "discount_pct": 14.29,
+      "currency_id": "ARS",
+      "permalink": "https://www.mercadolibre.com.ar/",
+      "thumbnail": "https://http2.mlstatic.com/D_NQ_NP_2X_772766-MLA78407180335_082024-F.webp",
+      "condition": "new",
+      "seller": "Mobile Demo"
+    },
+    {
+      "id": "MLA-DEMO-004",
+      "title": "Smart TV 55 4K UHD",
+      "price": 749999,
+      "original_price": 999999,
+      "discount_pct": 25.0,
+      "currency_id": "ARS",
+      "permalink": "https://www.mercadolibre.com.ar/",
+      "thumbnail": "https://http2.mlstatic.com/D_NQ_NP_2X_728304-MLA76097080396_042024-F.webp",
+      "condition": "new",
+      "seller": "TV Demo"
+    },
+    {
+      "id": "MLA-DEMO-005",
+      "title": "Mouse Gamer RGB 12000 DPI",
+      "price": 45999,
+      "original_price": 69999,
+      "discount_pct": 34.29,
+      "currency_id": "ARS",
+      "permalink": "https://www.mercadolibre.com.ar/",
+      "thumbnail": "https://http2.mlstatic.com/D_NQ_NP_2X_608984-MLA75939326392_042024-F.webp",
+      "condition": "new",
+      "seller": "Gaming Demo"
+    }
+  ]
+}
