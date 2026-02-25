@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { ArrowLeft, Calculator, Clock3, FileSpreadsheet, Globe, Hash, Search, Settings2, SlidersHorizontal } from 'lucide-react'
 import './App.css'
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
     include_international: false,
     cookie_file: 'cookies.txt',
     search_url: '',
+    preview_limit: 200,
   })
   const [count, setCount] = useState(null)
   const [elapsed, setElapsed] = useState(null)
@@ -27,13 +29,42 @@ function App() {
   const [loadingExport, setLoadingExport] = useState(false)
   const [countRunMs, setCountRunMs] = useState(0)
   const [exportRunMs, setExportRunMs] = useState(0)
+  const [previewRunMs, setPreviewRunMs] = useState(0)
   const [includeDraft, setIncludeDraft] = useState('')
   const [excludeDraft, setExcludeDraft] = useState('')
+  const [loadingPreview, setLoadingPreview] = useState(false)
+  const [previewRows, setPreviewRows] = useState([])
+  const [previewColumns, setPreviewColumns] = useState([])
+  const [previewElapsed, setPreviewElapsed] = useState(null)
+  const [view, setView] = useState('main')
+  const [columnFilters, setColumnFilters] = useState({
+    Posicion: '',
+    Titulo: '',
+    Precio: '',
+    Descuento: '',
+    Estado: '',
+    Link: '',
+  })
 
   const canSubmit = useMemo(
     () => Boolean(form.query.trim() || form.search_url.trim()),
     [form.query, form.search_url],
   )
+  const resolvedColumns = previewColumns.length
+    ? previewColumns
+    : ['Posicion', 'Titulo', 'Precio', 'Descuento', 'Estado', 'Link']
+
+  const filteredPreviewRows = useMemo(() => {
+    if (!previewRows.length) return []
+    return previewRows.filter((row) =>
+      resolvedColumns.every((col) => {
+        const needle = (columnFilters[col] || '').trim().toLowerCase()
+        if (!needle) return true
+        const hay = String(row[col] ?? '').toLowerCase()
+        return hay.includes(needle)
+      }),
+    )
+  }, [previewRows, resolvedColumns, columnFilters])
 
   const onChange = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -140,15 +171,113 @@ function App() {
     })
   }
 
+  const runPreview = async () => {
+    if (!canSubmit) return
+    setStatus('')
+    await runWithLiveTimer(setLoadingPreview, setPreviewRunMs, async () => {
+      try {
+        const res = await fetch('/api/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.detail || 'Error en previsualizacion')
+        setPreviewColumns(data.columns || [])
+        setPreviewRows(data.rows || [])
+        setPreviewElapsed(data.elapsed_seconds ?? null)
+        setView('preview')
+      } catch (err) {
+        setStatus(err.message)
+      }
+    })
+  }
+
+  if (view === 'preview') {
+    return (
+      <main className="page">
+        <section className="panel preview-page">
+          <div className="hero">
+            <h1>Previsualizacion de Excel</h1>
+            <button className="btn ghost" type="button" onClick={() => setView('main')}>
+              <span className="btn-content"><ArrowLeft size={16} />Volver</span>
+            </button>
+          </div>
+          <div className="preview-meta">
+            <span>Filas: {filteredPreviewRows.length} / {previewRows.length}</span>
+            <span>Tiempo: {previewElapsed != null ? `${previewElapsed}s` : '-'}</span>
+          </div>
+          <div className="table-wrap">
+            <table className="preview-table">
+              <thead>
+                <tr>
+                  {resolvedColumns.map((col) => (
+                    <th key={col}>{col}</th>
+                  ))}
+                </tr>
+                <tr className="filter-row">
+                  {resolvedColumns.map((col) => (
+                    <th key={`${col}-filter`}>
+                      <input
+                        className="col-filter-input"
+                        placeholder={`Filtrar ${col}`}
+                        value={columnFilters[col] || ''}
+                        onChange={(e) =>
+                          setColumnFilters((prev) => ({ ...prev, [col]: e.target.value }))
+                        }
+                      />
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredPreviewRows.map((row, idx) => (
+                  <tr key={`${row.Link}-${idx}`}>
+                    <td>{row.Posicion}</td>
+                    <td>{row.Titulo}</td>
+                    <td>{row.Precio}</td>
+                    <td>{row.Descuento}</td>
+                    <td>{row.Estado}</td>
+                    <td>
+                      {row.Link ? (
+                        <a href={row.Link} target="_blank" rel="noreferrer">
+                          abrir
+                        </a>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {!filteredPreviewRows.length && (
+                  <tr>
+                    <td colSpan={6}>Sin datos con los filtros actuales.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    )
+  }
+
   return (
     <main className="page">
       <section className="panel">
-        <h1>MercadoLibre Export UI</h1>
+        <div className="hero">
+          <h1>MercadoLibre Export UI</h1>
+          <span className="badge">Diseno integrado</span>
+        </div>
         <p className="hint">
           Configura filtros, calcula cantidad de resultados y exporta Excel sin listar productos.
         </p>
 
-        <div className="grid">
+        <div className="section">
+          <div className="section-title">
+            <Search size={14} /> Busqueda principal
+          </div>
+          <div className="grid">
           <label>
             Busqueda
             <input value={form.query} onChange={(e) => onChange('query', e.target.value)} />
@@ -270,6 +399,16 @@ function App() {
               onChange={(e) => onChange('max_pages', Number(e.target.value || 0))}
             />
           </label>
+          <label>
+            Limite preview
+            <input
+              type="number"
+              min="1"
+              max="2000"
+              value={form.preview_limit}
+              onChange={(e) => onChange('preview_limit', Number(e.target.value || 1))}
+            />
+          </label>
           <label className="full">
             URL exacta (opcional)
             <input
@@ -283,32 +422,47 @@ function App() {
             <input value={form.cookie_file} onChange={(e) => onChange('cookie_file', e.target.value)} />
           </label>
         </div>
+        </div>
 
+        <div className="section">
+          <div className="section-title">
+            <Settings2 size={14} /> Configuracion de ejecucion
+          </div>
         <div className="checks">
-          <label>
+          <label className="switch-card">
+            <span>Buscar todas las paginas</span>
             <input
               type="checkbox"
               checked={form.all_results}
               onChange={(e) => onChange('all_results', e.target.checked)}
             />
-            Buscar todas las paginas
+            <span className="switch">
+              <span className="switch-knob" />
+            </span>
           </label>
-          <label>
+          <label className="switch-card">
+            <span>Ordenar por precio</span>
             <input
               type="checkbox"
               checked={form.sort_price}
               onChange={(e) => onChange('sort_price', e.target.checked)}
             />
-            Ordenar por precio
+            <span className="switch">
+              <span className="switch-knob" />
+            </span>
           </label>
-          <label>
+          <label className="switch-card">
+            <span>Incluir internacionales</span>
             <input
               type="checkbox"
               checked={form.include_international}
               onChange={(e) => onChange('include_international', e.target.checked)}
             />
-            Incluir internacionales
+            <span className="switch">
+              <span className="switch-knob" />
+            </span>
           </label>
+        </div>
         </div>
 
         <div className="actions">
@@ -319,42 +473,65 @@ function App() {
                 Calculando... {(countRunMs / 1000).toFixed(1)}s
               </span>
             ) : (
-              'Calcular cantidad'
+              <span className="btn-content"><Calculator size={16} />Calcular cantidad</span>
             )}
           </button>
-          <button className="btn success" disabled={!canSubmit || loadingExport} onClick={runExport}>
+          <button className="btn info" disabled={!canSubmit || loadingPreview} onClick={runPreview}>
+            {loadingPreview ? (
+              <span className="btn-content">
+                <span className="loader" />
+                Cargando tabla... {(previewRunMs / 1000).toFixed(1)}s
+              </span>
+            ) : (
+              <span className="btn-content"><SlidersHorizontal size={16} />Previsualizar tabla</span>
+            )}
+          </button>
+          <button className="btn outline" disabled={!canSubmit || loadingExport} onClick={runExport}>
             {loadingExport ? (
               <span className="btn-content">
                 <span className="loader" />
                 Exportando... {(exportRunMs / 1000).toFixed(1)}s
               </span>
             ) : (
-              'Exportar Excel'
+              <span className="btn-content"><FileSpreadsheet size={16} />Exportar Excel</span>
             )}
           </button>
         </div>
 
         <div className="results">
-          <div>
-            <strong>Resultados:</strong> {count ?? '-'}
+          <div className="section-title">
+            <SlidersHorizontal size={14} /> Resumen
           </div>
-          <div>
-            <strong>Tiempo:</strong> {elapsed != null ? `${elapsed}s` : '-'}
+          <div className="kpi-grid">
+            <div className="kpi-card">
+              <div className="kpi-icon"><Hash size={14} /></div>
+              <div>
+                <div className="kpi-label">Resultados</div>
+                <div className="kpi-value">{count ?? '-'}</div>
+              </div>
+            </div>
+            <div className="kpi-card">
+              <div className="kpi-icon"><Clock3 size={14} /></div>
+              <div>
+                <div className="kpi-label">Tiempo</div>
+                <div className="kpi-value">{elapsed != null ? `${elapsed}s` : '-'}</div>
+              </div>
+            </div>
           </div>
           {applied && (
-            <div>
-              <strong>Filtros aplicados:</strong>{' '}
-              include=[{(applied.include_words || []).join(', ')}] exclude=[
-              {(applied.exclude_words || []).join(', ')}]
+            <div className="applied-filters">
+              <Globe size={13} /> include=[{(applied.include_words || []).join(', ')}] exclude=[
+              {(applied.exclude_words || []).join(', ')}] country={applied.country}
             </div>
           )}
           {status && <div className="status">{status}</div>}
-          {(loadingCount || loadingExport) && (
+          {(loadingCount || loadingExport || loadingPreview) && (
             <div className="running-hint">
-              Proceso activo: {loadingCount ? 'calculo de resultados' : 'exportacion de Excel'}
+              Proceso activo: {loadingCount ? 'calculo de resultados' : loadingPreview ? 'previsualizacion' : 'exportacion de Excel'}
             </div>
           )}
         </div>
+        <footer className="foot">MercadoLibre Export Tool v2.0 - Los datos extraidos son para uso personal.</footer>
       </section>
     </main>
   )

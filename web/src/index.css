@@ -4,7 +4,8 @@
 
 body {
   margin: 0;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  color: #102233;
+  font-family: "Manrope", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: #d8e8f5;
   min-width: 320px;
+  background: #08131f;
 }

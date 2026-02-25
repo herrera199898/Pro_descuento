@@ -32,6 +32,7 @@ class SearchPayload(BaseModel):
     include_international: bool = Field(default=False)
     cookie_file: str = Field(default="")
     search_url: str = Field(default="")
+    preview_limit: int = Field(default=200)
 
 
 app = FastAPI(title="MercadoLibre UI API")
@@ -89,6 +90,28 @@ def _extract_json(stdout_text: str) -> list[dict]:
         return json.loads(stdout_text[start : end + 1])
     except json.JSONDecodeError:
         return []
+
+
+def _to_excel_preview_rows(items: list[dict]) -> list[dict]:
+    state_map = {"new": "Nuevo", "used": "Usado", "reconditioned": "Reacondicionado"}
+    rows: list[dict] = []
+    for idx, item in enumerate(items, start=1):
+        raw_condition = str(item.get("condition") or "").lower().strip()
+        rows.append(
+            {
+                "Posicion": idx,
+                "Titulo": str(item.get("title") or ""),
+                "Precio": str(item.get("price") or ""),
+                "Descuento": (
+                    f"{item.get('discount_percent')}%"
+                    if item.get("discount_percent") is not None
+                    else ""
+                ),
+                "Estado": state_map.get(raw_condition, "N/D"),
+                "Link": str(item.get("link") or ""),
+            }
+        )
+    return rows
 
 
 @app.post("/api/count")
@@ -163,3 +186,39 @@ def export_results(payload: SearchPayload):
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         filename=export_path.name,
     )
+
+
+@app.post("/api/preview")
+def preview_results(payload: SearchPayload) -> dict:
+    if not payload.query.strip() and not payload.search_url.strip():
+        raise HTTPException(status_code=400, detail="Debes indicar query o search_url.")
+
+    limit = max(1, min(int(payload.preview_limit or 200), 2000))
+    cmd = _build_base_cmd(payload) + ["--json", "--include-condition", "--limit", str(limit)]
+    started = time.perf_counter()
+    proc = subprocess.run(
+        cmd,
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="ignore",
+        timeout=1800,
+        check=False,
+    )
+    elapsed = time.perf_counter() - started
+    if proc.returncode != 0:
+        raise HTTPException(
+            status_code=400,
+            detail=(proc.stderr or proc.stdout or "Error en previsualización").strip(),
+        )
+
+    items = _extract_json(proc.stdout)
+    rows = _to_excel_preview_rows(items)
+    return {
+        "columns": ["Posicion", "Titulo", "Precio", "Descuento", "Estado", "Link"],
+        "rows": rows,
+        "count": len(rows),
+        "elapsed_seconds": round(elapsed, 2),
+        "limit": limit,
+    }
