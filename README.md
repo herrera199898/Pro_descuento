@@ -2,6 +2,41 @@
 
 Script de consola para buscar productos en Mercado Libre y exportar resultados a Excel.
 
+## Modo visual (React + API)
+
+Ahora el proyecto incluye una interfaz visual para:
+
+- Aplicar filtros (pais, precio, descuento, estado, palabra, etc.)
+- Ver solo cantidad de resultados y tiempo
+- Exportar Excel sin listar productos
+
+### Requisitos adicionales
+
+- Node.js LTS (para frontend React)
+- Python 3.10+
+
+### Levantar backend API (FastAPI)
+
+```bash
+python -m uvicorn server:app --host 127.0.0.1 --port 8000
+```
+
+### Levantar frontend React (Vite)
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+La UI quedara disponible en `http://127.0.0.1:5173` y usara proxy a `/api`.
+
+### Un solo comando (backend + frontend)
+
+```bash
+python run_dev.py
+```
+
 ## Requisitos
 
 - Python 3.10+
@@ -55,6 +90,12 @@ python mercadolibre.py notebook rtx --country cl --all-results --max-pages 20 --
 
 ```bash
 python mercadolibre.py notebook rtx --country cl --all-results --max-pages 20 --word victus --export-xlsx
+```
+
+### Descartar palabras en el título (múltiples)
+
+```bash
+python mercadolibre.py notebook rtx --country cl --all-results --max-pages 20 --exclude-word funda --exclude-word carcasa --export-xlsx
 ```
 
 ### Filtrar por descuento mínimo

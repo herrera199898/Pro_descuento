@@ -7,6 +7,7 @@ import json
 import re
 import sys
 import time
+import unicodedata
 from datetime import datetime
 from html import unescape
 from io import BytesIO
@@ -62,6 +63,19 @@ def _progress_done() -> None:
 def clean_html_text(text: str) -> str:
     text = re.sub(r"<[^>]+>", "", text)
     return unescape(text).strip()
+
+
+def normalize_text(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value)
+    no_accents = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    return no_accents.lower().strip()
+
+
+def text_has_term(text: str, term: str) -> bool:
+    term = term.strip()
+    if not term:
+        return False
+    return term in text
 
 
 def extract_price_from_block(block: str) -> str | None:
@@ -638,17 +652,26 @@ def apply_filters(
     min_price: int,
     max_price: int,
     word: str,
+    include_words: list[str],
     min_discount: int,
+    exclude_words: list[str],
 ) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
-    word_lc = word.strip().lower()
+    word_lc = normalize_text(word) if word.strip() else ""
+    include_words_lc = [normalize_text(w) for w in include_words if str(w).strip()]
+    exclude_words_lc = [normalize_text(w) for w in exclude_words if str(w).strip()]
     for item in items:
+        title_lc = normalize_text(str(item.get("title", "")))
         price_val = parse_price_value(item.get("price"))
         if min_price > 0 and (price_val is None or price_val < min_price):
             continue
         if max_price > 0 and (price_val is None or price_val > max_price):
             continue
-        if word_lc and word_lc not in str(item.get("title", "")).lower():
+        if word_lc and not text_has_term(title_lc, word_lc):
+            continue
+        if include_words_lc and not all(text_has_term(title_lc, w) for w in include_words_lc):
+            continue
+        if exclude_words_lc and any(text_has_term(title_lc, w) for w in exclude_words_lc):
             continue
         discount = item.get("discount_percent")
         if min_discount > 0 and (discount is None or int(discount) < min_discount):
@@ -787,6 +810,8 @@ def run(
     min_price: int,
     max_price: int,
     word_filter: str,
+    include_words: list[str],
+    exclude_words: list[str],
     min_discount: int,
     sort_price: bool,
     export_xlsx_path: str | None,
@@ -816,7 +841,9 @@ def run(
         min_price=min_price,
         max_price=max_price,
         word=word_filter,
+        include_words=include_words,
         min_discount=min_discount,
+        exclude_words=exclude_words,
     )
 
     if condition_filter != "any":
@@ -942,6 +969,18 @@ def main() -> int:
         help="Filtra resultados por palabra en el título",
     )
     parser.add_argument(
+        "--include-word",
+        action="append",
+        default=[],
+        help="Palabra obligatoria en título. Repetir para varias.",
+    )
+    parser.add_argument(
+        "--exclude-word",
+        action="append",
+        default=[],
+        help="Palabra a descartar en título. Repetir para varias.",
+    )
+    parser.add_argument(
         "--min-discount",
         type=int,
         default=0,
@@ -999,7 +1038,7 @@ def main() -> int:
         }
         condition = estado_map[args.estado]
 
-    if not query:
+    if not query and not (args.search_url and str(args.search_url).strip()):
         print("Debes indicar un término de búsqueda.")
         exit_code = 2
         return exit_code
@@ -1024,6 +1063,8 @@ def main() -> int:
             max(0, args.min_price),
             max(0, args.max_price),
             args.word,
+            args.include_word,
+            args.exclude_word,
             max(0, min(100, args.min_discount)),
             args.sort_price,
             args.export_xlsx,
