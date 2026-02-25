@@ -1,42 +1,120 @@
-﻿# Proyecto Descuento
+﻿# MercadoLibre Scraper (CLI)
 
-Proyecto base para recolectar productos de Mercado Libre, analizarlos y exponerlos en una web de prueba.
+Script de consola para buscar productos en Mercado Libre y exportar resultados a Excel.
 
 ## Requisitos
 
 - Python 3.10+
+- Conexión a internet
 
-## Flujo
-
-1. Ejecutar el scraper para traer productos a `data/products.json`.
-2. Levantar servidor local.
-3. Usar la web para filtrar por precio, descuento y palabras clave.
-
-## Uso
+## Uso básico
 
 ```bash
-python scripts/fetch_mercadolibre.py --query "notebook" --limit 50
-python server.py
+python mercadolibre.py notebook rtx --country cl --limit 20
 ```
 
-Si la API devuelve `403` desde tu red, usa:
+## Salida JSON
 
 ```bash
-python scripts/fetch_mercadolibre.py --query "notebook" --limit 50 --use-sample-on-error
+python mercadolibre.py notebook rtx --country cl --limit 20 --json
 ```
 
-Luego abrir:
+## Traer más resultados (paginación)
 
-- http://localhost:8000
+```bash
+python mercadolibre.py notebook rtx --country cl --all-results --max-pages 20 --json
+```
 
-## Filtros disponibles (web)
+Sin límite de páginas (hasta que no haya más resultados):
 
-- Texto libre (`q`)
-- Precio mínimo y máximo
-- Descuento mínimo (%)
+```bash
+python mercadolibre.py notebook rtx --country cl --all-results --max-pages 0 --json
+```
+
+## Exportar a Excel (ruta automática)
+
+```bash
+python mercadolibre.py notebook rtx --country cl --all-results --max-pages 20 --sort-price --export-xlsx
+```
+
+## Exportar a Excel (ruta específica)
+
+```bash
+python mercadolibre.py notebook rtx --country cl --all-results --max-pages 20 --sort-price --export-xlsx exports\\notebook_rtx.xlsx
+```
+
+## Filtros útiles
+
+### Precio mínimo y máximo
+
+```bash
+python mercadolibre.py notebook rtx --country cl --all-results --max-pages 20 --min-price 700000 --max-price 1800000 --export-xlsx
+```
+
+### Filtrar por palabra en el título
+
+```bash
+python mercadolibre.py notebook rtx --country cl --all-results --max-pages 20 --word victus --export-xlsx
+```
+
+### Filtrar por descuento mínimo
+
+```bash
+python mercadolibre.py notebook rtx --country cl --all-results --max-pages 20 --min-discount 10 --export-xlsx
+```
+
+### Filtrar por condición
+
+```bash
+python mercadolibre.py notebook rtx --country cl --all-results --max-pages 20 --condition used --export-xlsx
+```
+
+Valores de `--condition`:
+
+- `any`
+- `new`
+- `used`
+- `reconditioned`
+
+También puedes usar alias en español con `--estado`:
+
+```bash
+python mercadolibre.py notebook rtx --country cl --all-results --max-pages 20 --estado usado --export-xlsx
+python mercadolibre.py notebook rtx --country cl --all-results --max-pages 20 --estado nuevo --export-xlsx
+python mercadolibre.py notebook rtx --country cl --all-results --max-pages 20 --estado reacondicionado --export-xlsx
+```
+
+## Rendimiento
+
+- El script imprime al final: `Tiempo total: X.XXs`.
+- Ajusta `--max-pages` para equilibrar cobertura vs tiempo.
+- Ajusta `--condition-workers` (default: 16) para acelerar lectura de estado.
 
 ## Notas
 
-- Se usa la API pública de búsqueda de Mercado Libre:
-  `https://api.mercadolibre.com/sites/MLA/search?q=...`
-- El dataset queda local para que luego me compartas tus pedidos y yo te ayude a analizar.
+- Por defecto se excluyen publicaciones internacionales.
+- Para incluir internacionales usa `--include-international`.
+- Los excels se guardan por defecto en `exports/`.
+## Sesion autenticada (cookies)
+
+Si Mercado Libre bloquea resultados (pagina shell), puedes pasar cookies de sesion:
+
+```bash
+python mercadolibre.py celular --country cl --all-results --max-pages 0 --sort-price --export-xlsx --cookie "_d2id=...; _mldataSessionId=...; _csrf=..."
+```
+
+O desde archivo de texto:
+
+```bash
+python mercadolibre.py celular --country cl --all-results --max-pages 0 --sort-price --export-xlsx --cookie-file cookies.txt
+```
+
+`cookies.txt` debe contener una sola linea con formato `name=value; name2=value2`.
+
+## Replicar exactamente la URL del navegador
+
+Si quieres que el scraper use los mismos filtros/categorias de la URL del navegador:
+
+```bash
+python mercadolibre.py --search-url "https://listado.mercadolibre.cl/..." --all-results --max-pages 0 --export-xlsx --cookie-file cookies.txt
+```
