@@ -869,8 +869,16 @@ def run(
             item["position"] = idx
 
     if not items:
+        # Empty result set is a valid outcome for strict filters.
+        if export_xlsx_path is not None:
+            out = export_xlsx(items, query=query, country=country, output_path=export_xlsx_path)
+            print(f"Excel generado: {out}")
+            return 0
+        if as_json:
+            print("[]")
+            return 0
         print("No se encontraron resultados o cambió el HTML de Mercado Libre.")
-        return 1
+        return 0
 
     if export_xlsx_path is not None:
         out = export_xlsx(items, query=query, country=country, output_path=export_xlsx_path)
