@@ -8,12 +8,23 @@ import tempfile
 import threading
 import time
 from pathlib import Path
+from urllib.request import Request, urlopen
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 import mercadolibre as ml
+
+try:
+    import httpx  # type: ignore
+except Exception:
+    httpx = None
+
+try:
+    from selectolax.parser import HTMLParser  # type: ignore
+except Exception:
+    HTMLParser = None
 
 ROOT = Path(__file__).resolve().parent
 SCRIPT = ROOT / "mercadolibre.py"
@@ -161,6 +172,102 @@ def _cache_set(key: str, value: dict) -> None:
         _COUNT_CACHE[key] = (expires_at, value)
 
 
+def _try_read_cookie_header(payload: SearchPayload) -> str:
+    cookie_file = payload.cookie_file.strip()
+    if not cookie_file:
+        return ""
+    try:
+        return Path(cookie_file).read_text(encoding="utf-8").lstrip("\ufeff").strip()
+    except Exception:
+        return ""
+
+
+def _build_search_url_for_count(payload: SearchPayload) -> str:
+    if payload.search_url.strip():
+        return payload.search_url.strip()
+    return ml.build_search_url_with_start(
+        query=payload.query.strip(),
+        country=payload.country,
+        start=1,
+        exclude_international=not bool(payload.include_international),
+        min_price=max(0, int(payload.min_price)),
+        max_price=max(0, int(payload.max_price)),
+        min_discount=max(0, min(100, int(payload.min_discount))),
+        sort_price=bool(payload.sort_price),
+        condition_filter=payload.condition if payload.condition in {"any", "new", "used", "reconditioned"} else "any",
+    )
+
+
+def _extract_total_from_html(html: str) -> int | None:
+    if HTMLParser is not None:
+        tree = HTMLParser(html)
+        for css in (
+            ".ui-search-search-result__quantity-results",
+            ".ui-search-search-result__subtitle span",
+            ".ui-search-search-result__text",
+        ):
+            node = tree.css_first(css)
+            if not node:
+                continue
+            txt = (node.text() or "").strip()
+            digits = "".join(ch for ch in txt if ch.isdigit())
+            if digits:
+                return int(digits)
+
+    # Fallback regex for pages where CSS classes changed.
+    import re
+
+    patterns = [
+        r'ui-search-search-result__quantity-results[^>]*>([^<]+)<',
+        r'(\d[\d\.\,]*)\s+resultados',
+        r'(\d[\d\.\,]*)\s+publicaciones',
+    ]
+    for pattern in patterns:
+        m = re.search(pattern, html, flags=re.IGNORECASE)
+        if not m:
+            continue
+        txt = m.group(1)
+        digits = "".join(ch for ch in txt if ch.isdigit())
+        if digits:
+            return int(digits)
+    return None
+
+
+def _count_via_first_page_total(payload: SearchPayload) -> int | None:
+    # Fast path is only valid when there are no client-side title filters.
+    if payload.word.strip() or any(str(w).strip() for w in payload.include_words) or any(
+        str(w).strip() for w in payload.exclude_words
+    ):
+        return None
+
+    url = _build_search_url_for_count(payload)
+    headers = {"User-Agent": ml.USER_AGENT}
+    cookie_header = _try_read_cookie_header(payload)
+    if cookie_header:
+        headers["Cookie"] = cookie_header
+
+    html = ""
+    if httpx is not None:
+        with httpx.Client(timeout=20, follow_redirects=True, headers=headers) as client:
+            resp = client.get(url)
+            if resp.status_code >= 400:
+                return None
+            html = resp.text
+    else:
+        req = Request(url, headers=headers)
+        with urlopen(req, timeout=20) as response:
+            html = response.read().decode("utf-8", errors="ignore")
+
+    if not html or "This page requires JavaScript to work" in html:
+        return None
+    total = _extract_total_from_html(html)
+    # Mercado Libre often returns capped/sentinel totals for broad searches.
+    # These values are not exact and should fall back to crawl mode.
+    if total in {9999, 10000}:
+        return None
+    return total
+
+
 def _count_in_process(payload: SearchPayload) -> dict:
     ml.configure_cookie_header(None, payload.cookie_file.strip() or None)
     condition_filter = payload.condition if payload.condition in {"any", "new", "used", "reconditioned"} else "any"
@@ -215,8 +322,15 @@ def count_results(payload: SearchPayload) -> dict:
         }
 
     started = time.perf_counter()
+    computed: dict
+    source = "crawl"
     try:
-        computed = _count_in_process(payload)
+        total_hint = _count_via_first_page_total(payload)
+        if total_hint is not None:
+            computed = {"count": total_hint}
+            source = "first_page_total"
+        else:
+            computed = _count_in_process(payload)
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Error ejecutando scraper: {exc}") from exc
     elapsed = time.perf_counter() - started
@@ -224,6 +338,7 @@ def count_results(payload: SearchPayload) -> dict:
         "count": computed["count"],
         "elapsed_seconds": round(elapsed, 2),
         "cache_hit": False,
+        "count_source": source,
         "applied_filters": {
             "query": payload.query,
             "min_price": payload.min_price,
