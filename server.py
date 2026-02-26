@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from pathlib import Path
 
@@ -11,9 +13,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
+import mercadolibre as ml
 
 ROOT = Path(__file__).resolve().parent
 SCRIPT = ROOT / "mercadolibre.py"
+COUNT_CACHE_TTL_SECONDS = 300
+_COUNT_CACHE: dict[str, tuple[float, dict]] = {}
+_CACHE_LOCK = threading.Lock()
 
 
 class SearchPayload(BaseModel):
@@ -114,34 +120,110 @@ def _to_excel_preview_rows(items: list[dict]) -> list[dict]:
     return rows
 
 
+def _payload_cache_key(payload: SearchPayload) -> str:
+    normalized = {
+        "query": payload.query.strip(),
+        "country": payload.country,
+        "all_results": bool(payload.all_results),
+        "max_pages": int(payload.max_pages),
+        "min_price": int(max(0, payload.min_price)),
+        "max_price": int(max(0, payload.max_price)),
+        "min_discount": int(max(0, min(100, payload.min_discount))),
+        "word": payload.word.strip(),
+        "include_words": sorted([str(w).strip() for w in payload.include_words if str(w).strip()]),
+        "exclude_words": sorted([str(w).strip() for w in payload.exclude_words if str(w).strip()]),
+        "condition": payload.condition,
+        "sort_price": bool(payload.sort_price),
+        "include_international": bool(payload.include_international),
+        "cookie_file": payload.cookie_file.strip(),
+        "search_url": payload.search_url.strip(),
+    }
+    raw = json.dumps(normalized, ensure_ascii=False, sort_keys=True)
+    return hashlib.sha1(raw.encode("utf-8")).hexdigest()
+
+
+def _cache_get(key: str) -> dict | None:
+    now = time.time()
+    with _CACHE_LOCK:
+        entry = _COUNT_CACHE.get(key)
+        if not entry:
+            return None
+        expires_at, value = entry
+        if expires_at < now:
+            _COUNT_CACHE.pop(key, None)
+            return None
+        return value
+
+
+def _cache_set(key: str, value: dict) -> None:
+    expires_at = time.time() + COUNT_CACHE_TTL_SECONDS
+    with _CACHE_LOCK:
+        _COUNT_CACHE[key] = (expires_at, value)
+
+
+def _count_in_process(payload: SearchPayload) -> dict:
+    ml.configure_cookie_header(None, payload.cookie_file.strip() or None)
+    condition_filter = payload.condition if payload.condition in {"any", "new", "used", "reconditioned"} else "any"
+    fetch_all = bool(payload.all_results)
+    limit = 10
+
+    items = ml.collect_results(
+        query=payload.query.strip(),
+        country=payload.country,
+        limit=limit if condition_filter == "any" else min(max(limit * 4, limit), 80),
+        fetch_all=fetch_all,
+        max_pages=int(payload.max_pages),
+        exclude_international=not bool(payload.include_international),
+        min_price=max(0, int(payload.min_price)),
+        max_price=max(0, int(payload.max_price)),
+        min_discount=max(0, min(100, int(payload.min_discount))),
+        sort_price=bool(payload.sort_price),
+        condition_filter=condition_filter,
+        search_url=payload.search_url.strip() or None,
+        quiet=True,
+    )
+
+    items = ml.apply_filters(
+        items,
+        min_price=max(0, int(payload.min_price)),
+        max_price=max(0, int(payload.max_price)),
+        word=payload.word.strip(),
+        include_words=[str(w).strip() for w in payload.include_words if str(w).strip()],
+        min_discount=max(0, min(100, int(payload.min_discount))),
+        exclude_words=[str(w).strip() for w in payload.exclude_words if str(w).strip()],
+    )
+
+    if condition_filter != "any":
+        items = [item for item in items if item.get("condition") == condition_filter]
+        if not fetch_all:
+            items = items[:limit]
+
+    return {"count": len(items)}
+
+
 @app.post("/api/count")
 def count_results(payload: SearchPayload) -> dict:
     if not payload.query.strip() and not payload.search_url.strip():
         raise HTTPException(status_code=400, detail="Debes indicar query o search_url.")
 
-    cmd = _build_base_cmd(payload) + ["--json"]
-    started = time.perf_counter()
-    proc = subprocess.run(
-        cmd,
-        cwd=str(ROOT),
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="ignore",
-        timeout=1800,
-        check=False,
-    )
-    elapsed = time.perf_counter() - started
-    if proc.returncode != 0:
-        raise HTTPException(
-            status_code=400,
-            detail=(proc.stderr or proc.stdout or "Error ejecutando scraper").strip(),
-        )
+    cache_key = _payload_cache_key(payload)
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return {
+            **cached,
+            "cache_hit": True,
+        }
 
-    items = _extract_json(proc.stdout)
-    return {
-        "count": len(items),
+    started = time.perf_counter()
+    try:
+        computed = _count_in_process(payload)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Error ejecutando scraper: {exc}") from exc
+    elapsed = time.perf_counter() - started
+    response = {
+        "count": computed["count"],
         "elapsed_seconds": round(elapsed, 2),
+        "cache_hit": False,
         "applied_filters": {
             "query": payload.query,
             "min_price": payload.min_price,
@@ -152,6 +234,8 @@ def count_results(payload: SearchPayload) -> dict:
             "country": payload.country,
         },
     }
+    _cache_set(cache_key, response)
+    return response
 
 
 @app.post("/api/export")

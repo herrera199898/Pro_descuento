@@ -404,6 +404,7 @@ def collect_results(
     condition_filter: str,
     search_url: str | None,
     timeout: int = 20,
+    quiet: bool = False,
 ) -> list[dict[str, Any]]:
     opener, jar = _build_opener()
     current_start = 1
@@ -419,11 +420,12 @@ def collect_results(
     next_url: str | None = search_url.strip() if search_url else None
     while unlimited_pages or page_count < max_pages:
         page_count += 1
-        _progress(
-            "Recolectando paginas",
-            page_count,
-            (None if unlimited_pages else (max_pages if fetch_all else None)),
-        )
+        if not quiet:
+            _progress(
+                "Recolectando paginas",
+                page_count,
+                (None if unlimited_pages else (max_pages if fetch_all else None)),
+            )
         if next_url:
             current_url = next_url
         else:
@@ -540,7 +542,8 @@ def collect_results(
         else:
             current_start += page_size
 
-    _progress_done()
+    if not quiet:
+        _progress_done()
     return collected if fetch_all else collected[:limit]
 
 
