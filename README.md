@@ -159,3 +159,46 @@ Si quieres que el scraper use los mismos filtros/categorias de la URL del navega
 ```bash
 python mercadolibre.py --search-url "https://listado.mercadolibre.cl/..." --all-results --max-pages 0 --export-xlsx --cookie-file cookies.txt
 ```
+
+## Automatizacion 100% gratuita (GitHub Actions)
+
+Puedes ejecutar busquedas diarias sin prender tu PC usando GitHub Actions.
+
+### Archivos incluidos
+
+- `automation/searches.json`: configuracion de busquedas.
+- `automation/daily_job.py`: ejecuta scraping, genera JSON/XLSX y resumen.
+- `.github/workflows/daily_scan.yml`: corrida diaria automatica.
+
+### Como activarlo
+
+1. Sube este repo a GitHub.
+2. Ve a `Settings > Secrets and variables > Actions`.
+3. (Opcional) Crea el secret `ML_COOKIE` con cookie header completo:
+   - ejemplo: `_d2id=...; _csrf=...; ssid=...`
+4. Ve a `Actions` y ejecuta manualmente `Daily MercadoLibre Scan` una vez.
+5. Revisa `Artifacts` del run:
+   - `automation/runs/<timestamp>/summary.md`
+   - `automation/runs/<timestamp>/all_results.json`
+   - archivos `*.json` y `*.xlsx` por busqueda
+
+### Programacion diaria
+
+El workflow corre diariamente a las `12:15 UTC` (cron en `.github/workflows/daily_scan.yml`).
+Puedes ajustar esa hora editando:
+
+```yaml
+schedule:
+  - cron: '15 12 * * *'
+```
+
+### Personalizar busquedas
+
+Edita `automation/searches.json`. Cada entrada en `queries` permite:
+
+- `terms`, `country`
+- `min_price`, `max_price`, `min_discount`
+- `condition` (`any/new/used/reconditioned`)
+- `include_words`, `exclude_words`
+- `all_results`, `max_pages`
+- `export_xlsx`
