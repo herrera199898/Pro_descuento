@@ -22,12 +22,16 @@ function App() {
     preview_limit: 200,
   })
   const [count, setCount] = useState(null)
+  const [exactCount, setExactCount] = useState(null)
   const [elapsed, setElapsed] = useState(null)
+  const [exactElapsed, setExactElapsed] = useState(null)
   const [applied, setApplied] = useState(null)
   const [status, setStatus] = useState('')
   const [loadingCount, setLoadingCount] = useState(false)
+  const [loadingExactCount, setLoadingExactCount] = useState(false)
   const [loadingExport, setLoadingExport] = useState(false)
   const [countRunMs, setCountRunMs] = useState(0)
+  const [exactCountRunMs, setExactCountRunMs] = useState(0)
   const [exportRunMs, setExportRunMs] = useState(0)
   const [previewRunMs, setPreviewRunMs] = useState(0)
   const [includeDraft, setIncludeDraft] = useState('')
@@ -165,6 +169,26 @@ function App() {
         a.remove()
         window.URL.revokeObjectURL(url)
         setStatus('Excel exportado correctamente.')
+      } catch (err) {
+        setStatus(err.message)
+      }
+    })
+  }
+
+  const runExactCount = async () => {
+    if (!canSubmit) return
+    setStatus('')
+    await runWithLiveTimer(setLoadingExactCount, setExactCountRunMs, async () => {
+      try {
+        const res = await fetch('/api/count-exact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.detail || 'Error en conteo exacto')
+        setExactCount(data.count)
+        setExactElapsed(data.elapsed_seconds)
       } catch (err) {
         setStatus(err.message)
       }
@@ -476,6 +500,16 @@ function App() {
               <span className="btn-content"><Calculator size={16} />Calcular cantidad</span>
             )}
           </button>
+          <button className="btn warn" disabled={!canSubmit || loadingExactCount} onClick={runExactCount}>
+            {loadingExactCount ? (
+              <span className="btn-content">
+                <span className="loader" />
+                Calculando exacto... {(exactCountRunMs / 1000).toFixed(1)}s
+              </span>
+            ) : (
+              <span className="btn-content"><Calculator size={16} />Calcular exacta</span>
+            )}
+          </button>
           <button className="btn info" disabled={!canSubmit || loadingPreview} onClick={runPreview}>
             {loadingPreview ? (
               <span className="btn-content">
@@ -506,15 +540,29 @@ function App() {
             <div className="kpi-card">
               <div className="kpi-icon"><Hash size={14} /></div>
               <div>
-                <div className="kpi-label">Resultados</div>
+                <div className="kpi-label">Rapida</div>
                 <div className="kpi-value">{count ?? '-'}</div>
+              </div>
+            </div>
+            <div className="kpi-card">
+              <div className="kpi-icon"><Hash size={14} /></div>
+              <div>
+                <div className="kpi-label">Exacta</div>
+                <div className="kpi-value">{exactCount ?? '-'}</div>
               </div>
             </div>
             <div className="kpi-card">
               <div className="kpi-icon"><Clock3 size={14} /></div>
               <div>
-                <div className="kpi-label">Tiempo</div>
+                <div className="kpi-label">Tiempo rapida</div>
                 <div className="kpi-value">{elapsed != null ? `${elapsed}s` : '-'}</div>
+              </div>
+            </div>
+            <div className="kpi-card">
+              <div className="kpi-icon"><Clock3 size={14} /></div>
+              <div>
+                <div className="kpi-label">Tiempo exacta</div>
+                <div className="kpi-value">{exactElapsed != null ? `${exactElapsed}s` : '-'}</div>
               </div>
             </div>
           </div>
@@ -525,9 +573,9 @@ function App() {
             </div>
           )}
           {status && <div className="status">{status}</div>}
-          {(loadingCount || loadingExport || loadingPreview) && (
+          {(loadingCount || loadingExactCount || loadingExport || loadingPreview) && (
             <div className="running-hint">
-              Proceso activo: {loadingCount ? 'calculo de resultados' : loadingPreview ? 'previsualizacion' : 'exportacion de Excel'}
+              Proceso activo: {loadingCount ? 'calculo rapido' : loadingExactCount ? 'calculo exacto' : loadingPreview ? 'previsualizacion' : 'exportacion de Excel'}
             </div>
           )}
         </div>

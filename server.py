@@ -308,6 +308,18 @@ def _count_in_process(payload: SearchPayload) -> dict:
     return {"count": len(items)}
 
 
+def _applied_filters(payload: SearchPayload) -> dict:
+    return {
+        "query": payload.query,
+        "min_price": payload.min_price,
+        "max_price": payload.max_price,
+        "include_words": payload.include_words,
+        "exclude_words": payload.exclude_words,
+        "condition": payload.condition,
+        "country": payload.country,
+    }
+
+
 @app.post("/api/count")
 def count_results(payload: SearchPayload) -> dict:
     if not payload.query.strip() and not payload.search_url.strip():
@@ -339,15 +351,37 @@ def count_results(payload: SearchPayload) -> dict:
         "elapsed_seconds": round(elapsed, 2),
         "cache_hit": False,
         "count_source": source,
-        "applied_filters": {
-            "query": payload.query,
-            "min_price": payload.min_price,
-            "max_price": payload.max_price,
-            "include_words": payload.include_words,
-            "exclude_words": payload.exclude_words,
-            "condition": payload.condition,
-            "country": payload.country,
-        },
+        "applied_filters": _applied_filters(payload),
+    }
+    _cache_set(cache_key, response)
+    return response
+
+
+@app.post("/api/count-exact")
+def count_results_exact(payload: SearchPayload) -> dict:
+    if not payload.query.strip() and not payload.search_url.strip():
+        raise HTTPException(status_code=400, detail="Debes indicar query o search_url.")
+
+    cache_key = f"exact:{_payload_cache_key(payload)}"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return {
+            **cached,
+            "cache_hit": True,
+        }
+
+    started = time.perf_counter()
+    try:
+        computed = _count_in_process(payload)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Error ejecutando scraper exacto: {exc}") from exc
+    elapsed = time.perf_counter() - started
+    response = {
+        "count": computed["count"],
+        "elapsed_seconds": round(elapsed, 2),
+        "cache_hit": False,
+        "count_source": "crawl_exact",
+        "applied_filters": _applied_filters(payload),
     }
     _cache_set(cache_key, response)
     return response

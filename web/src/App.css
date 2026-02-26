@@ -246,6 +246,10 @@ button:disabled {
   background: linear-gradient(140deg, #2f87d6 0%, #1c5d99 100%);
 }
 
+.btn.warn {
+  background: linear-gradient(140deg, #c9912d 0%, #8a5f1f 100%);
+}
+
 .btn.ghost {
   background: transparent;
   border: 1px solid rgba(127, 175, 209, 0.35);
@@ -286,7 +290,7 @@ button:disabled {
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
 }
 
