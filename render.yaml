@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: prodescuento-mercadolibre
+    runtime: docker
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: ML_COOKIE
+        sync: false

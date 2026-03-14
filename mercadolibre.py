@@ -4,6 +4,7 @@ import argparse
 import concurrent.futures
 import hashlib
 import json
+import os
 import re
 import sys
 import time
@@ -42,6 +43,7 @@ CONDITION_TOKEN_BY_FILTER = {
 DEFAULT_PAGE_SIZE = 48
 MAX_EMPTY_PAGES = 5
 REQUEST_COOKIE_HEADER: str | None = None
+ROOT = Path(__file__).resolve().parent
 
 
 def _progress(prefix: str, current: int, total: int | None = None) -> None:
@@ -178,11 +180,22 @@ def _parse_cookie_pairs(raw: str) -> str:
 
 def configure_cookie_header(cookie_inline: str | None, cookie_file: str | None) -> None:
     global REQUEST_COOKIE_HEADER
+    env_cookie = os.getenv("ML_COOKIE", "").lstrip("\ufeff").strip()
     content = ""
     if cookie_file:
-        content = Path(cookie_file).read_text(encoding="utf-8").lstrip("\ufeff").strip()
+        cookie_path = Path(cookie_file)
+        if not cookie_path.is_absolute():
+            cookie_path = ROOT / cookie_path
+        if cookie_path.exists():
+            content = cookie_path.read_text(encoding="utf-8").lstrip("\ufeff").strip()
+        elif env_cookie:
+            content = env_cookie
+        else:
+            raise FileNotFoundError(f"No existe el archivo de cookies: {cookie_path}")
     elif cookie_inline:
         content = cookie_inline.lstrip("\ufeff").strip()
+    elif env_cookie:
+        content = env_cookie
     REQUEST_COOKIE_HEADER = _parse_cookie_pairs(content) if content else None
 
 

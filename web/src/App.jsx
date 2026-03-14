@@ -17,7 +17,7 @@ function App() {
     condition: 'any',
     sort_price: true,
     include_international: false,
-    cookie_file: 'cookies.txt',
+    cookie_file: '',
     search_url: '',
     preview_limit: 200,
   })

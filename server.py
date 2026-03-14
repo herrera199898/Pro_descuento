@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import hashlib
 import json
 import subprocess
@@ -12,11 +13,13 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 import mercadolibre as ml
 
 ROOT = Path(__file__).resolve().parent
 SCRIPT = ROOT / "mercadolibre.py"
+WEB_DIST = ROOT / "web" / "dist"
 COUNT_CACHE_TTL_SECONDS = 300
 _COUNT_CACHE: dict[str, tuple[float, dict]] = {}
 _CACHE_LOCK = threading.Lock()
@@ -51,6 +54,16 @@ app.add_middleware(
 )
 
 
+def _resolve_cookie_file(cookie_file: str) -> str | None:
+    raw = cookie_file.strip()
+    if not raw:
+        return None
+    path = Path(raw)
+    if not path.is_absolute():
+        path = ROOT / path
+    return str(path)
+
+
 def _build_base_cmd(payload: SearchPayload) -> list[str]:
     cmd = [sys.executable, str(SCRIPT)]
     query = payload.query.strip()
@@ -80,8 +93,9 @@ def _build_base_cmd(payload: SearchPayload) -> list[str]:
         cmd.append("--sort-price")
     if payload.include_international:
         cmd.append("--include-international")
-    if payload.cookie_file.strip():
-        cmd.extend(["--cookie-file", payload.cookie_file.strip()])
+    cookie_file = _resolve_cookie_file(payload.cookie_file)
+    if cookie_file:
+        cmd.extend(["--cookie-file", cookie_file])
     if payload.search_url.strip():
         cmd.extend(["--search-url", payload.search_url.strip()])
     return cmd
@@ -162,7 +176,7 @@ def _cache_set(key: str, value: dict) -> None:
 
 
 def _count_in_process(payload: SearchPayload) -> dict:
-    ml.configure_cookie_header(None, payload.cookie_file.strip() or None)
+    ml.configure_cookie_header(None, _resolve_cookie_file(payload.cookie_file))
     condition_filter = payload.condition if payload.condition in {"any", "new", "used", "reconditioned"} else "any"
     fetch_all = bool(payload.all_results)
     limit = 10
@@ -341,3 +355,36 @@ def preview_results(payload: SearchPayload) -> dict:
         "elapsed_seconds": round(elapsed, 2),
         "limit": limit,
     }
+
+
+@app.get("/api/health")
+def healthcheck() -> dict:
+    return {
+        "status": "ok",
+        "frontend_built": WEB_DIST.exists(),
+        "cookie_secret_configured": bool(os.getenv("ML_COOKIE", "").strip()),
+    }
+
+
+if WEB_DIST.exists():
+    assets_dir = WEB_DIST / "assets"
+    index_file = WEB_DIST / "index.html"
+
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/")
+    def serve_index():
+        return FileResponse(index_file)
+
+
+    @app.get("/{file_path:path}")
+    def serve_frontend(file_path: str):
+        if file_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not found")
+
+        candidate = WEB_DIST / file_path
+        if candidate.exists() and candidate.is_file():
+            return FileResponse(candidate)
+
+        return FileResponse(index_file)

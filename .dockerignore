@@ -1,0 +1,15 @@
+.git
+.github
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+node_modules/
+web/node_modules/
+web/dist/
+_design_import/
+exports/
+*.zip
+cookies.txt

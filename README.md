@@ -31,11 +31,52 @@ npm run dev
 
 La UI quedara disponible en `http://127.0.0.1:5173` y usara proxy a `/api`.
 
+Si quieres usar cookies autenticadas en local, puedes:
+
+- escribir la ruta en el campo `Archivo cookies (opcional)`, o
+- definir la variable de entorno `ML_COOKIE` con el header completo.
+
 ### Un solo comando (backend + frontend)
 
 ```bash
 python run_dev.py
 ```
+
+## Despliegue en Render
+
+El repo ya queda preparado para Render como un solo servicio Docker:
+
+- `Dockerfile`: compila `web/` con Vite y sirve todo desde FastAPI.
+- `render.yaml`: crea un Web Service con healthcheck en `/api/health`.
+- `requirements.txt`: dependencias Python del backend.
+
+### Opcion recomendada: Blueprint
+
+1. Sube este repo a GitHub.
+2. En Render, entra a `New + > Blueprint`.
+3. Selecciona el repositorio.
+4. Render detectara `render.yaml` y creara el servicio.
+5. En `Environment`, agrega el secret `ML_COOKIE` si necesitas sesion autenticada.
+
+### Variables importantes
+
+- `ML_COOKIE`: opcional. Cookie header completo de Mercado Libre.
+- `PORT`: lo maneja Render automaticamente.
+
+### Como funciona en produccion
+
+- Render construye el frontend con `npm ci && npm run build`.
+- FastAPI sirve la SPA compilada desde `web/dist`.
+- La API queda en el mismo dominio bajo `/api/...`.
+
+### Probar Docker localmente
+
+```bash
+docker build -t prodescuento-ml .
+docker run --rm -p 10000:10000 -e ML_COOKIE="a=1; b=2" prodescuento-ml
+```
+
+Luego abre `http://127.0.0.1:10000`.
 
 ## Requisitos
 
