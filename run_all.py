@@ -145,6 +145,16 @@ def _ensure_python_env() -> Path:
 
 
 def _npm_for_node(node_path: Path) -> Path:
+    if os.name == "nt":
+        for name in ("npm.cmd", "npm.exe"):
+            npm = node_path.parent / name
+            if npm.exists():
+                return npm
+        for name in ("npm.cmd", "npm.exe", "npm"):
+            found = shutil.which(name)
+            if found:
+                return Path(found)
+
     npm = node_path.parent / "npm"
     if npm.exists():
         return npm
