@@ -224,7 +224,7 @@ Campos de configuracion global relevantes:
 - `smart_filter`
 - `sort_price`
 - `include_international`
-- Campos especificos por fuente: `facebook_radius_km`, `pulga_category`, `knasta_retails`, `solotodo_category_id`, `travel_category_id`, `tuganga_stores`, `descuentosrata_all`, `pcfactory_word`, `pcfactory_category_id`, `aliexpress_word`, `aliexpress_category_id`, `jumbo_category_id`, `santaisabel_category_id`, `unimarc_category_id`, `alvi_category_id`, `lider_category_id`, `acuenta_category_id`, `tottus_category_id`, etc.
+- Campos especificos por fuente: `mercadolibre_word`, `mercadolibre_category`, `facebook_radius_km`, `pulga_category`, `knasta_retails`, `solotodo_category_id`, `travel_category_id`, `tuganga_stores`, `descuentosrata_all`, `pcfactory_word`, `pcfactory_category_id`, `aliexpress_word`, `aliexpress_category_id`, `jumbo_category_id`, `santaisabel_category_id`, `unimarc_category_id`, `alvi_category_id`, `lider_category_id`, `acuenta_category_id`, `tottus_category_id`, etc. En MercadoLibre, `mercadolibre_category` puede ser un alias de categoria normal o una URL completa de categoria destacada/campana como `/ofertas` o `/ofertas/dia-del-padre`.
 
 Importante:
 

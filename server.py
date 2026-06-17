@@ -114,6 +114,7 @@ class GlobalSearchPayload(BaseModel):
     sort_price: bool = Field(default=False)
     include_international: bool = Field(default=False)
     mercadolibre_word: str = Field(default="")
+    mercadolibre_category: str = Field(default="")
     mercadolibre_search_url: str = Field(default="")
     mercadolibre_condition: str = Field(default="used")
     facebook_word: str = Field(default="")
@@ -225,6 +226,7 @@ def global_search_start(payload: GlobalSearchPayload) -> dict:
     raw = payload.model_dump()
     cfg = global_search.build_config(raw)
     has_category = any([
+        cfg.get("mercadolibre_category"),
         cfg.get("pulga_category"),
         cfg.get("knasta_category"),
         cfg.get("solotodo_category_id"),
@@ -301,11 +303,13 @@ def global_search_poll(job_id: str) -> dict:
 @app.get("/api/global-categories")
 def global_categories(
     query: str = "",
+    country: str = "cl",
     knasta_knastaday: int = 0,
     knasta_retails: str = "",
     tuganga_mode: str = "all_offers",
 ) -> dict:
     categories: dict[str, list[dict]] = {
+        "mercadolibre": [],
         "pulga": [
             {"id": "", "value": "", "label": "Todas"},
             {"id": "tecnologia", "value": "tecnologia", "label": "Tecnologia"},
@@ -333,6 +337,51 @@ def global_categories(
         "tottus": [],
     }
     errors: dict[str, str] = {}
+
+    try:
+        import mercadolibre
+
+        ml_country = (country or "cl").strip().lower() or "cl"
+        categories["mercadolibre"] = [
+            {
+                "id": str(category.get("id") or category.get("value") or ""),
+                "value": str(category.get("value") or ""),
+                "label": str(category.get("label") or category.get("name") or ""),
+                "count": category.get("count"),
+                "group": str(category.get("group") or "category"),
+            }
+            for category in mercadolibre.fetch_categories(ml_country)
+        ]
+        if query.strip():
+            search_url = mercadolibre.build_initial_listing_url(
+                query=query.strip(),
+                country=ml_country,
+                exclude_international=True,
+                min_price=0,
+                max_price=0,
+                min_discount=0,
+                sort_price=False,
+                condition_filter="any",
+            )
+            search_api = mercadolibre.search_metadata_from_url(search_url, ml_country, timeout=20)
+            dynamic_categories = [
+                {
+                    "id": str(category.get("id") or category.get("url") or ""),
+                    "value": str(category.get("url") or category.get("id") or ""),
+                    "label": str(category.get("name") or ""),
+                    "count": category.get("count"),
+                    "url": str(category.get("url") or ""),
+                    "group": "suggested",
+                }
+                for category in mercadolibre.categories_from_search_api(search_api)
+                if category.get("url") or category.get("id")
+            ]
+            seen = {str(category.get("value") or "") for category in categories["mercadolibre"]}
+            categories["mercadolibre"].extend(
+                category for category in dynamic_categories if str(category.get("value") or "") not in seen
+            )
+    except Exception as exc:
+        errors["mercadolibre"] = str(exc)
 
     try:
         import knasta_api

@@ -32,6 +32,7 @@ function App() {
     ],
     country: 'cl',
     mercadolibre_word: '',
+    mercadolibre_category: '',
     mercadolibre_search_url: '',
     mercadolibre_condition: 'used',
     sort_price: false,
@@ -76,6 +77,7 @@ function App() {
   const [globalLoading, setGlobalLoading] = useState(false)
   const [globalRunMs, setGlobalRunMs] = useState(0)
   const [globalCategories, setGlobalCategories] = useState({
+    mercadolibre: [],
     pulga: [],
     knasta: [],
     solotodo: [],
@@ -147,6 +149,7 @@ function App() {
     if (!suggested || !query.trim()) return
     setGlobalForm((prev) => {
       const next = { ...prev }
+      if (suggested.mercadolibre_category !== undefined) next.mercadolibre_category = suggested.mercadolibre_category || ''
       if (suggested.pulga_category !== undefined) next.pulga_category = suggested.pulga_category || ''
       if (suggested.knasta_category !== undefined) next.knasta_category = suggested.knasta_category || ''
       if (suggested.solotodo_category_id !== undefined) next.solotodo_category_id = Number(suggested.solotodo_category_id || 0)
@@ -167,6 +170,7 @@ function App() {
   const resetAllCategories = useCallback(() => {
     setGlobalForm((prev) => ({
       ...prev,
+      mercadolibre_category: '',
       pulga_category: '',
       knasta_category: '',
       solotodo_category_id: 0,
@@ -188,6 +192,7 @@ function App() {
       try {
         const params = new URLSearchParams({
           query,
+          country: globalForm.country,
           knasta_knastaday: String(globalForm.knasta_knastaday || 0),
           knasta_retails: globalForm.knasta_retails_text,
           tuganga_mode: query ? 'search' : globalForm.tuganga_mode,
@@ -218,6 +223,7 @@ function App() {
     }
   }, [
     globalForm.query,
+    globalForm.country,
     globalForm.knasta_knastaday,
     globalForm.knasta_retails_text,
     globalForm.tuganga_mode,
@@ -232,7 +238,7 @@ function App() {
   }, [globalForm.auto_categories, categorySuggestion, globalForm.query, applySuggestedCategories])
 
   const onGlobalChange = (key, value) => {
-    const categoryKeys = new Set(['pulga_category', 'knasta_category', 'solotodo_category_id', 'travel_category_id', 'tuganga_category', 'pcfactory_category_id', 'aliexpress_category_id'])
+    const categoryKeys = new Set(['mercadolibre_category', 'pulga_category', 'knasta_category', 'solotodo_category_id', 'travel_category_id', 'tuganga_category', 'pcfactory_category_id', 'aliexpress_category_id'])
     setGlobalForm((prev) => {
       const next = { ...prev, [key]: value }
       if (categoryKeys.has(key) && prev.auto_categories) {
@@ -378,6 +384,7 @@ function App() {
     const hasQuery = Boolean(globalForm.query.trim())
     const onlyRata = globalForm.sources.length === 1 && globalForm.sources[0] === 'descuentosrata'
     const hasCategory = Boolean(
+      globalForm.mercadolibre_category ||
       globalForm.pulga_category ||
       globalForm.knasta_category ||
       globalForm.solotodo_category_id ||
@@ -390,6 +397,7 @@ function App() {
   }, [
     globalForm.query,
     globalForm.sources,
+    globalForm.mercadolibre_category,
     globalForm.pulga_category,
     globalForm.knasta_category,
     globalForm.solotodo_category_id,

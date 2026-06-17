@@ -585,13 +585,13 @@
     "semantic_hash": ""
   },
   "automation/searches.json": {
-    "mtime": 1772128937.0,
-    "ast_hash": "dffa18af29c948e3cf0f950f5e77cb2b",
+    "mtime": 1781581714.9518597,
+    "ast_hash": "f2b6bc2aa92a7a5eaab6e068b8455b53",
     "semantic_hash": ""
   },
   "category_suggest.py": {
-    "mtime": 1779338416.5631666,
-    "ast_hash": "794a4bde33b3de38ad34f701113e6a3a",
+    "mtime": 1781656874.100792,
+    "ast_hash": "64d9f2bce59c4b8e77ee5d5a183456e5",
     "semantic_hash": ""
   },
   "demo_supermercados.py": {
@@ -600,8 +600,8 @@
     "semantic_hash": ""
   },
   "descuentosrata_scraper/descuentosrata_api.py": {
-    "mtime": 1779857871.2810228,
-    "ast_hash": "330b1aef164218f5ce713c5eff5cf653",
+    "mtime": 1781581714.9518597,
+    "ast_hash": "0069ac7867d0d55ca02489827a9cd697",
     "semantic_hash": ""
   },
   "descuentosrata_scraper/server.py": {
@@ -640,13 +640,13 @@
     "semantic_hash": ""
   },
   "facebook_marketplace/fb_cookie_profiles.json": {
-    "mtime": 1780874661.5366826,
-    "ast_hash": "e92c5d3bc15dbf00d2aeb2d717b35008",
+    "mtime": 1781577392.827489,
+    "ast_hash": "3bf413fef48fcaa9d0ff928990060e98",
     "semantic_hash": ""
   },
   "facebook_marketplace/fb_cookies.json": {
-    "mtime": 1780874661.53768,
-    "ast_hash": "3a046247803be9cd0b2285c95f963de2",
+    "mtime": 1781577392.827489,
+    "ast_hash": "97742b40ee7d53b2b484881032b000e1",
     "semantic_hash": ""
   },
   "facebook_marketplace/fb_cookies_talca.json": {
@@ -750,8 +750,8 @@
     "semantic_hash": ""
   },
   "global_search.py": {
-    "mtime": 1781027438.2041311,
-    "ast_hash": "6af8b552c46f308e046b2904aea35632",
+    "mtime": 1781657664.0946896,
+    "ast_hash": "9c7bcfd28682b3362fbe1ea52cb12e0a",
     "semantic_hash": ""
   },
   "knasta_scraper/analyze.py": {
@@ -795,8 +795,8 @@
     "semantic_hash": ""
   },
   "knasta_scraper/knasta_api.py": {
-    "mtime": 1780588435.866127,
-    "ast_hash": "6a9b6b1b927844703207ae1bb5ec29b1",
+    "mtime": 1781581714.9555013,
+    "ast_hash": "4c579800f37cdd4ffddf5db3f175ecca",
     "semantic_hash": ""
   },
   "knasta_scraper/run_dev.py": {
@@ -850,8 +850,8 @@
     "semantic_hash": ""
   },
   "mercadolibre.py": {
-    "mtime": 1778041999.6403363,
-    "ast_hash": "742c4c7544b5613b61c4a9d7045c5da1",
+    "mtime": 1781658887.7259762,
+    "ast_hash": "36a31c1094cb6ba5f79a74b6de155942",
     "semantic_hash": ""
   },
   "pcfactory_scraper/pcfactory.py": {
@@ -915,8 +915,8 @@
     "semantic_hash": ""
   },
   "run_all.py": {
-    "mtime": 1780423981.605032,
-    "ast_hash": "7ca4e663d76f0b3e103bb077318eb653",
+    "mtime": 1781582428.3827531,
+    "ast_hash": "d577171fea3c587554dc633e3fad3052",
     "semantic_hash": ""
   },
   "run_dev.py": {
@@ -1000,8 +1000,8 @@
     "semantic_hash": ""
   },
   "server.py": {
-    "mtime": 1780943013.2373278,
-    "ast_hash": "c9661f5c6ab243819d69419a373b3252",
+    "mtime": 1781658030.6788268,
+    "ast_hash": "154cf75a2c5e57b9cca51ef56fb6895d",
     "semantic_hash": ""
   },
   "solotodo_scraper/run_dev.py": {
@@ -1190,8 +1190,8 @@
     "semantic_hash": ""
   },
   "web/src/App.jsx": {
-    "mtime": 1780943145.025593,
-    "ast_hash": "84502c417a38bf7454c438a20ff57d6b",
+    "mtime": 1781657325.4581192,
+    "ast_hash": "c26a9b9d52f4e6f044b0c8126ae467d1",
     "semantic_hash": ""
   },
   "web/src/components/SupermercadosPanel.jsx": {
@@ -1205,8 +1205,8 @@
     "semantic_hash": ""
   },
   "web/src/global-search/GlobalSearchFilterModal.jsx": {
-    "mtime": 1780622972.6702292,
-    "ast_hash": "2b8ed088d901402c3a9b68e43574209f",
+    "mtime": 1781658040.6245112,
+    "ast_hash": "4aaee69645786ef332e8fec9638cecbe",
     "semantic_hash": ""
   },
   "web/src/global-search/GlobalSearchHUD.jsx": {
@@ -1315,13 +1315,13 @@
     "semantic_hash": ""
   },
   ".github/workflows/daily_scan.yml": {
-    "mtime": 1772128989.0,
-    "ast_hash": "4f484ad089b7b80a8097feecbf01f187",
+    "mtime": 1781581714.9497254,
+    "ast_hash": "268d4307691f2714fd13ed0207a57b80",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1777688454.5037272,
-    "ast_hash": "ea465d16a97c12b98b9c5a37ccf41d57",
+    "mtime": 1781581714.9507835,
+    "ast_hash": "3d53e1065da7ea3382049f12122805cd",
     "semantic_hash": ""
   },
   "_ref_mercadolibre_ui/README.md": {
@@ -1335,8 +1335,8 @@
     "semantic_hash": ""
   },
   "agents.md": {
-    "mtime": 1781027830.8696551,
-    "ast_hash": "947d35e5bc31367e7a8b359186b7b25e",
+    "mtime": 1781658049.124325,
+    "ast_hash": "f9ebe10cea016f30d17485ff8bc44c61",
     "semantic_hash": ""
   },
   "app_vipent/app_vipent/README.md": {
@@ -1345,8 +1345,8 @@
     "semantic_hash": ""
   },
   "cookies.txt": {
-    "mtime": 1777849681.7634425,
-    "ast_hash": "63f1c27a3c0527669a383196f6d089c4",
+    "mtime": 1781577016.2915945,
+    "ast_hash": "f3b9f2f1f75f8248fddf36717ecaa507",
     "semantic_hash": ""
   },
   "descuentosrata_scraper/requirements.txt": {
@@ -1652,6 +1652,46 @@
   "web/public/sounds/resident_evil_cancel.mp3": {
     "mtime": 1780428682.0662158,
     "ast_hash": "08e3286e870e6fdb339327be54c7909a",
+    "semantic_hash": ""
+  },
+  "automation/scheduled_global_job.py": {
+    "mtime": 1781581714.9513433,
+    "ast_hash": "0157887acf87e48ccd127c30ff21980d",
+    "semantic_hash": ""
+  },
+  "test_descuentosrata_api.py": {
+    "mtime": 1781581714.9555013,
+    "ast_hash": "4c16486b9e60e6591f1b5341e70dc149",
+    "semantic_hash": ""
+  },
+  "test_global_mercadolibre_resilience.py": {
+    "mtime": 1781581714.9555013,
+    "ast_hash": "25ca2e38cce7bfef70da0feffa7a25a3",
+    "semantic_hash": ""
+  },
+  "test_mercadolibre_diagnostics.py": {
+    "mtime": 1781581714.9555013,
+    "ast_hash": "ba342d7fc8832f32e6dd72b12566e4f5",
+    "semantic_hash": ""
+  },
+  "test_mercadolibre_json_export.py": {
+    "mtime": 1781581714.9555013,
+    "ast_hash": "55a09b6991318b39cd7ae81d53706595",
+    "semantic_hash": ""
+  },
+  "test_scheduled_global_job.py": {
+    "mtime": 1781581714.9610627,
+    "ast_hash": "e3483ab6b0afb9af4f4819c991e1fa05",
+    "semantic_hash": ""
+  },
+  "scratch/ml_home.html": {
+    "mtime": 1781657982.202232,
+    "ast_hash": "865b61c8426384dc8fff394f11021373",
+    "semantic_hash": ""
+  },
+  "scratch/ml_dia_padre.html": {
+    "mtime": 1781658849.311292,
+    "ast_hash": "647c71381b245ca079c7581cc40b5988",
     "semantic_hash": ""
   }
 }

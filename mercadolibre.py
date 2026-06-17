@@ -33,6 +33,48 @@ DOMAIN_BY_COUNTRY = {
     "pe": "mercadolibre.com.pe",
 }
 
+ROOT_CATEGORIES_BY_COUNTRY = {
+    "cl": [
+        {"id": "featured:offers", "value": "https://www.mercadolibre.cl/ofertas", "label": "Ofertas", "group": "featured"},
+        {"id": "featured:father-day", "value": "https://www.mercadolibre.cl/ofertas/dia-del-padre", "label": "Dia del Padre", "group": "featured"},
+        {"id": "featured:supermarket", "value": "https://www.mercadolibre.cl/ofertas/supermercado", "label": "Ofertas Supermercado", "group": "featured"},
+        {"id": "featured:pharmacy", "value": "https://www.mercadolibre.cl/ofertas/farmacia", "label": "Ofertas Farmacia", "group": "featured"},
+        {"id": "featured:cyber-day", "value": "https://www.mercadolibre.cl/cyber-day", "label": "Cyber Day", "group": "featured"},
+        {"id": "featured:cyber-monday", "value": "https://www.mercadolibre.cl/cyber-monday", "label": "Cyber Monday", "group": "featured"},
+        {"id": "featured:black-week", "value": "https://www.mercadolibre.cl/ofertas/black-week", "label": "Black Week", "group": "featured"},
+        {"id": "featured:black-friday", "value": "https://www.mercadolibre.cl/black-friday", "label": "Black Friday", "group": "featured"},
+        {"id": "featured:promotions", "value": "https://www.mercadolibre.cl/l/promociones", "label": "Promociones", "group": "featured"},
+        {"id": "MLC1747", "value": "accesorios-vehiculos", "label": "Accesorios para Vehiculos"},
+        {"id": "MLC1367", "value": "animales-mascotas", "label": "Animales y Mascotas"},
+        {"id": "MLC1368", "value": "arte-libreria-merceria", "label": "Arte, Libreria y Merceria"},
+        {"id": "MLC1743", "value": "autos-motos-otros", "label": "Autos, Motos y Otros"},
+        {"id": "MLC1384", "value": "bebes", "label": "Bebes"},
+        {"id": "MLC1246", "value": "belleza-cuidado-personal", "label": "Belleza y Cuidado Personal"},
+        {"id": "MLC1039", "value": "camaras-accesorios", "label": "Camaras y Accesorios"},
+        {"id": "MLC1051", "value": "celulares-telefonia", "label": "Celulares y Telefonia"},
+        {"id": "MLC1648", "value": "computacion", "label": "Computacion"},
+        {"id": "MLC1144", "value": "consolas-videojuegos", "label": "Consolas y Videojuegos"},
+        {"id": "MLC1500", "value": "construccion", "label": "Construccion"},
+        {"id": "MLC1276", "value": "deportes-fitness", "label": "Deportes y Fitness"},
+        {"id": "MLC5726", "value": "electrodomesticos", "label": "Electrodomesticos"},
+        {"id": "MLC1000", "value": "electronica-audio-video", "label": "Electronica, Audio y Video"},
+        {"id": "MLC178483", "value": "herramientas", "label": "Herramientas"},
+        {"id": "MLC1574", "value": "hogar-muebles-jardin", "label": "Hogar, Muebles y Jardin"},
+        {"id": "MLC1499", "value": "industrias-oficinas", "label": "Industrias y Oficinas"},
+        {"id": "MLC1459", "value": "inmuebles", "label": "Inmuebles"},
+        {"id": "MLC1182", "value": "instrumentos-musicales", "label": "Instrumentos Musicales"},
+        {"id": "MLC1132", "value": "juegos-juguetes", "label": "Juegos y Juguetes"},
+        {"id": "MLC3025", "value": "libros-revistas-comics", "label": "Libros, Revistas y Comics"},
+        {"id": "MLC3937", "value": "relojes-joyas", "label": "Relojes y Joyas"},
+        {"id": "MLC1430", "value": "ropa-accesorios", "label": "Ropa y Accesorios"},
+        {"id": "MLC180800", "value": "salud-equipamiento-medico", "label": "Salud y Equipamiento Medico"},
+    ],
+}
+
+
+def fetch_categories(country: str = "cl") -> list[dict[str, Any]]:
+    return [dict(category) for category in ROOT_CATEGORIES_BY_COUNTRY.get(country, [])]
+
 USER_AGENT = os.getenv(
     "ML_USER_AGENT",
     (
@@ -1639,6 +1681,37 @@ def extract_next_page_url(html: str, current_url: str) -> str | None:
     return urljoin(current_url, unescape(next_match.group(1)))
 
 
+def is_featured_campaign_url(url: str) -> bool:
+    lowered = url.lower()
+    return (
+        "/ofertas" in lowered
+        or "/cyber" in lowered
+        or "/black-friday" in lowered
+        or "/l/promociones" in lowered
+    )
+
+
+def extract_featured_collection_urls(html: str, current_url: str, limit: int = 40) -> list[str]:
+    urls: list[str] = []
+    seen: set[str] = set()
+    for match in re.finditer(r'href="([^"]+)"', html):
+        raw_url = unescape(match.group(1))
+        absolute = urljoin(current_url, raw_url)
+        lowered = absolute.lower()
+        if "listado.mercadolibre.cl/" not in lowered:
+            continue
+        if "_container_" not in lowered and "_discount_" not in lowered and "/tienda/" not in lowered:
+            continue
+        normalized = absolute.split("#", 1)[0]
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        urls.append(normalized)
+        if len(urls) >= limit:
+            break
+    return urls
+
+
 def collect_results(
     query: str,
     country: str,
@@ -1652,6 +1725,7 @@ def collect_results(
     sort_price: bool,
     condition_filter: str,
     search_url: str | None,
+    category_url: str | None = None,
     timeout: int = 20,
     quiet: bool = False,
 ) -> list[dict[str, Any]]:
@@ -1666,7 +1740,12 @@ def collect_results(
 
     unlimited_pages = max_pages <= 0
     shell_page_streak = 0
-    next_url: str | None = search_url.strip() if search_url else None
+    category_value = category_url.strip() if category_url else ""
+    next_url: str | None = search_url.strip() if search_url else (
+        category_value if category_value.startswith("http") else None
+    )
+    campaign_seed_urls: list[str] = []
+    campaign_seed_seen: set[str] = set()
     while unlimited_pages or page_count < max_pages:
         page_count += 1
         if not quiet:
@@ -1688,6 +1767,7 @@ def collect_results(
                 min_discount=min_discount,
                 sort_price=sort_price,
                 condition_filter=condition_filter,
+                category_alias=(category_value if category_value and not category_value.startswith("http") else None),
             )
         html = ""
         last_error: BaseException | None = None
@@ -1763,6 +1843,12 @@ def collect_results(
             continue
         shell_page_streak = 0
 
+        if fetch_all and page_count == 1 and is_featured_campaign_url(current_url):
+            for seed_url in extract_featured_collection_urls(html, current_url):
+                if seed_url not in campaign_seed_seen:
+                    campaign_seed_seen.add(seed_url)
+                    campaign_seed_urls.append(seed_url)
+
         page_items = parse_results_from_html(html, limit=200)
         if not page_items:
             sample = save_failure_html(html, "selector_or_parse_empty", current_url)
@@ -1823,6 +1909,40 @@ def collect_results(
                 break
         else:
             current_start += page_size
+
+    if fetch_all and campaign_seed_urls and len(collected) < limit:
+        for seed_url in campaign_seed_urls:
+            if len(collected) >= limit:
+                break
+            try:
+                seed_items = collect_results(
+                    query=query,
+                    country=country,
+                    limit=limit - len(collected),
+                    fetch_all=False,
+                    max_pages=1,
+                    exclude_international=exclude_international,
+                    min_price=min_price,
+                    max_price=max_price,
+                    min_discount=min_discount,
+                    sort_price=sort_price,
+                    condition_filter=condition_filter,
+                    search_url=seed_url,
+                    category_url=None,
+                    timeout=timeout,
+                    quiet=True,
+                )
+            except Exception:
+                continue
+            for item in seed_items:
+                link = item.get("link")
+                if not link or link in seen_links:
+                    continue
+                seen_links.add(link)
+                item["position"] = len(collected) + 1
+                collected.append(item)
+                if len(collected) >= limit:
+                    break
 
     if not quiet:
         _progress_done()

@@ -33,6 +33,9 @@ function Check({ label, checked, onChange }) {
 export default function GlobalSearchFilterModal({ node, globalForm, onGlobalChange, globalCategories, globalCategoriesLoading, onClose }) {
   const categories = globalCategories || {}
   const optionLabel = (category) => `${category.label}${category.count != null ? ` (${Number(category.count).toLocaleString('es-CL')})` : ''}`
+  const mercadolibreCategories = categories.mercadolibre || []
+  const mercadolibreFeaturedCategories = mercadolibreCategories.filter((category) => category.group === 'featured')
+  const mercadolibreRegularCategories = mercadolibreCategories.filter((category) => category.group !== 'featured')
   const pcfactoryCategories = categories.pcfactory || []
   const pcfactoryById = new Map(pcfactoryCategories.map((category) => [String(category.value), category]))
   const pcfactoryPath = []
@@ -121,6 +124,15 @@ export default function GlobalSearchFilterModal({ node, globalForm, onGlobalChan
                 <Field label="Pais">
                   <SelectInput value={globalForm.country} onChange={(e) => onGlobalChange('country', e.target.value)}>
                     <option value="cl">Chile</option><option value="ar">Argentina</option><option value="mx">Mexico</option><option value="co">Colombia</option><option value="pe">Peru</option>
+                  </SelectInput>
+                </Field>
+                <Field label="Categoria">
+                  <SelectInput value={globalForm.mercadolibre_category} onChange={(e) => onGlobalChange('mercadolibre_category', e.target.value)} disabled={globalCategoriesLoading}>
+                    <option value="">{globalCategoriesLoading ? 'Cargando categorias...' : 'Todas las categorias'}</option>
+                    {mercadolibreFeaturedCategories.length > 0 && <option disabled>──── DESTACADAS ────</option>}
+                    {mercadolibreFeaturedCategories.map((category) => <option key={category.value || category.id} value={category.value}>{optionLabel(category)}</option>)}
+                    {mercadolibreFeaturedCategories.length > 0 && mercadolibreRegularCategories.length > 0 && <option disabled>──── CATEGORIAS ────</option>}
+                    {mercadolibreRegularCategories.map((category) => <option key={category.value || category.id} value={category.value}>{optionLabel(category)}</option>)}
                   </SelectInput>
                 </Field>
                 <Field label="Estado">

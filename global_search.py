@@ -228,6 +228,7 @@ def _run_mercadolibre(cfg: dict[str, Any]) -> dict[str, Any]:
         "sort_price": cfg["sort_price"],
         "condition_filter": cfg["mercadolibre_condition"],
         "search_url": cfg["mercadolibre_search_url"] or None,
+        "category_url": cfg["mercadolibre_category"] or None,
         "timeout": 30,
         "quiet": True,
     }
@@ -273,6 +274,7 @@ def _run_mercadolibre(cfg: dict[str, Any]) -> dict[str, Any]:
         items,
         {
             "condition": cfg["mercadolibre_condition"],
+            "category": cfg["mercadolibre_category"] or None,
             "cookie_source": cookie_source,
             "max_pages": ml_max_pages,
             "warning": fallback_warning or None,
@@ -713,6 +715,7 @@ def build_config(raw: dict[str, Any]) -> dict[str, Any]:
         "sort_price": bool(raw.get("sort_price", False)),
         "include_international": bool(raw.get("include_international", False)),
         "mercadolibre_word": str(raw.get("mercadolibre_word") or "").strip(),
+        "mercadolibre_category": str(raw.get("mercadolibre_category") or "").strip(),
         "mercadolibre_search_url": str(raw.get("mercadolibre_search_url") or "").strip(),
         "mercadolibre_condition": str(raw.get("mercadolibre_condition") or "used").strip() or "used",
         "facebook_word": str(raw.get("facebook_word") or "").strip(),
@@ -761,6 +764,7 @@ def run_global_search(
 ) -> dict[str, Any]:
     cfg = build_config(raw_config)
     has_category = any([
+        cfg.get("mercadolibre_category"),
         cfg.get("pulga_category"),
         cfg.get("knasta_category"),
         cfg.get("solotodo_category_id"),

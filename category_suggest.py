@@ -153,12 +153,14 @@ def build_suggestions(
     categories: dict[str, list[dict[str, Any]]],
 ) -> dict[str, Any]:
     q = query.strip()
+    mercadolibre = categories.get("mercadolibre") or []
     pulga = categories.get("pulga") or []
     knasta = categories.get("knasta") or []
     solotodo = categories.get("solotodo") or []
     travel = categories.get("travel") or []
     tuganga = categories.get("tuganga") or []
 
+    mercadolibre_cat = suggest_from_counts(q, mercadolibre) if q else ""
     pulga_cat = suggest_pulga(q, pulga) if q else ""
     knasta_cat = suggest_from_counts(q, knasta) if q else ""
     tuganga_cat = suggest_from_counts(q, tuganga) if q else ""
@@ -174,6 +176,7 @@ def build_suggestions(
         travel_id = str(travel_pick)
 
     labels = {
+        "mercadolibre": _label_for_value(mercadolibre, mercadolibre_cat),
         "pulga": _label_for_value(pulga, pulga_cat),
         "knasta": _label_for_value(knasta, knasta_cat),
         "solotodo": _label_for_value(solotodo, solotodo_id),
@@ -182,6 +185,7 @@ def build_suggestions(
     }
 
     return {
+        "mercadolibre_category": mercadolibre_cat,
         "pulga_category": pulga_cat,
         "knasta_category": knasta_cat,
         "solotodo_category_id": solotodo_id,

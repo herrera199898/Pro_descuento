@@ -1,16 +1,16 @@
-# Graph Report - Pro_descuento__v2  (2026-06-09)
+# Graph Report - Pro_descuento__v2  (2026-06-16)
 
 ## Corpus Check
-- 274 files · ~222,403 words
+- 280 files · ~247,022 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2146 nodes · 3575 edges · 187 communities (146 shown, 41 thin omitted)
+- 2202 nodes · 3673 edges · 185 communities (145 shown, 40 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 7 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `decfc694`
+- Built from commit: `3e5f9fcb`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -63,7 +63,6 @@
 - [[_COMMUNITY_Community 45|Community 45]]
 - [[_COMMUNITY_Community 46|Community 46]]
 - [[_COMMUNITY_Community 47|Community 47]]
-- [[_COMMUNITY_Community 48|Community 48]]
 - [[_COMMUNITY_Community 49|Community 49]]
 - [[_COMMUNITY_Community 50|Community 50]]
 - [[_COMMUNITY_Community 51|Community 51]]
@@ -156,30 +155,29 @@
 - [[_COMMUNITY_Community 148|Community 148]]
 - [[_COMMUNITY_Community 153|Community 153]]
 - [[_COMMUNITY_Community 182|Community 182]]
-- [[_COMMUNITY_Community 183|Community 183]]
-- [[_COMMUNITY_Community 185|Community 185]]
-- [[_COMMUNITY_Community 186|Community 186]]
-- [[_COMMUNITY_Community 187|Community 187]]
+- [[_COMMUNITY_Community 184|Community 184]]
+- [[_COMMUNITY_Community 189|Community 189]]
+- [[_COMMUNITY_Community 190|Community 190]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `cn()` - 271 edges
 2. `Any` - 36 edges
 3. `Any` - 27 edges
-4. `SoundService` - 26 edges
-5. `Any` - 24 edges
+4. `Any` - 26 edges
+5. `SoundService` - 26 edges
 6. `Any` - 24 edges
 7. `Guia de Contexto para Agentes de IA - Proyecto Pro Descuento` - 22 edges
 8. `Any` - 21 edges
 9. `Any` - 21 edges
-10. `Any` - 20 edges
+10. `collect_results()` - 20 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `global_categories()` --calls--> `build_suggestions()`  [EXTRACTED]
-  server.py → category_suggest.py
 - `_filter_words()` --calls--> `normalize()`  [INFERRED]
   global_search.py → test_filter.py
 - `collect_results()` --calls--> `fetch_page()`  [INFERRED]
   vtex_scraper/vtex_core.py → knasta_scraper/knasta_api.py
+- `global_categories()` --calls--> `build_suggestions()`  [EXTRACTED]
+  server.py → category_suggest.py
 - `AlertDialogOverlay()` --calls--> `cn()`  [EXTRACTED]
   _design_import/components/ui/alert-dialog.tsx → _design_import/lib/utils.ts
 - `AlertDialogContent()` --calls--> `cn()`  [EXTRACTED]
@@ -188,11 +186,11 @@
 ## Import Cycles
 - None detected.
 
-## Communities (187 total, 41 thin omitted)
+## Communities (185 total, 40 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.08
-Nodes (65): CookieJar, append_filter_tokens(), apply_filters(), _attribute_value(), build_filter_tokens(), build_initial_listing_url(), _build_opener(), build_search_url() (+57 more)
+Cohesion: 0.06
+Nodes (76): CookieJar, append_filter_tokens(), apply_filters(), _attribute_value(), build_filter_tokens(), build_initial_listing_url(), _build_opener(), build_search_url() (+68 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.06
@@ -207,8 +205,8 @@ Cohesion: 0.07
 Nodes (7): SUPERMARKET_SOURCES, GlobalSearchHUD(), getRunForNode(), GLOBAL_NODES, isNodeActive(), LOGS, SoundService
 
 ### Community 4 - "Community 4"
-Cohesion: 0.18
-Nodes (16): _build_options(), _cache_get(), _cache_key(), _cache_set(), CookiePayload, count_results(), export_results(), preview_results() (+8 more)
+Cohesion: 0.06
+Nodes (35): BaseModel, export_results(), preview_results(), SearchPayload, _build_options(), _cache_get(), _cache_key(), _cache_set() (+27 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.04
@@ -239,16 +237,16 @@ Cohesion: 0.07
 Nodes (36): Action, ActionType, actionTypes, addToRemoveQueue(), dispatch(), genId(), listeners, memoryState (+28 more)
 
 ### Community 12 - "Community 12"
-Cohesion: 0.10
-Nodes (24): BaseModel, aliexpress_cookies_status(), CookiePayload, facebook_cookies_status(), _facebook_profile_status(), FacebookCookiePayload, _file_age_status(), global_categories() (+16 more)
+Cohesion: 0.09
+Nodes (34): build_suggestions(), _label_for_value(), _normalize(), Any, Sugerencia conservadora de categorías para búsqueda global (términos generales)., Elige categoría dominante por volumen; si hay empate, devuelve Todas ('')., _score_label(), suggest_by_label() (+26 more)
 
 ### Community 13 - "Community 13"
 Cohesion: 0.09
 Nodes (12): FilterModalProps, HUDProps, MatrixCoreProps, NodeIconProps, ResultsModalProps, LOGS, TerminalProps, SoundService (+4 more)
 
 ### Community 14 - "Community 14"
-Cohesion: 0.14
-Nodes (34): build_config(), _dedupe_key(), _filter_words(), _limit_for(), _plain(), Any, Path, Respect 0 as a valid value (Todas las categorias en SoloTodo). (+26 more)
+Cohesion: 0.12
+Nodes (35): build_config(), _dedupe_key(), _filter_words(), _limit_for(), _plain(), Any, Path, Respect 0 as a valid value (Todas las categorias en SoloTodo). (+27 more)
 
 ### Community 15 - "Community 15"
 Cohesion: 0.08
@@ -382,10 +380,6 @@ Nodes (11): Menubar(), MenubarCheckboxItem(), MenubarContent(), MenubarItem(), M
 Cohesion: 0.12
 Nodes (15): dependencies, lucide-react, react, react-dom, devDependencies, vite, @vitejs/plugin-react, name (+7 more)
 
-### Community 48 - "Community 48"
-Cohesion: 0.25
-Nodes (11): _cache_get(), _cache_key(), _cache_set(), _collect_items(), count_results(), export_results(), _has_search_input(), preview_results() (+3 more)
-
 ### Community 49 - "Community 49"
 Cohesion: 0.12
 Nodes (9): ContextMenuCheckboxItem(), ContextMenuContent(), ContextMenuItem(), ContextMenuLabel(), ContextMenuRadioItem(), ContextMenuSeparator(), ContextMenuShortcut(), ContextMenuSubContent() (+1 more)
@@ -435,8 +429,8 @@ Cohesion: 0.42
 Nodes (10): parse_price_value(), Any, build_cmd(), extract_json(), main(), QueryResult, run_query(), write_summary() (+2 more)
 
 ### Community 61 - "Community 61"
-Cohesion: 0.33
-Nodes (10): build_xlsx_bytes(), clean_html(), execute_search(), extract_offers(), fetch_html(), parse_price(), Any, SearchOptions (+2 more)
+Cohesion: 0.30
+Nodes (14): build_xlsx_bytes(), clean_html(), execute_search(), extract_offers(), fetch_api_offers(), fetch_html(), fetch_json(), _fetch_text() (+6 more)
 
 ### Community 62 - "Community 62"
 Cohesion: 0.22
@@ -484,7 +478,7 @@ Nodes (6): compilerOptions, paths, strict, extends, include, @/*
 
 ### Community 73 - "Community 73"
 Cohesion: 0.29
-Nodes (6): country_code, include_talca, location_query, marketplace_path, radius_km, queries
+Nodes (6): country_code, include_talca, location_query, marketplace_path, queries, radius_km
 
 ### Community 74 - "Community 74"
 Cohesion: 0.29
@@ -594,37 +588,37 @@ Nodes (3): Correr junto a todas las vistas, Correr solo TuGanga, TuGanga Scraper
 Cohesion: 0.50
 Nodes (3): Expanding the ESLint configuration, React + Vite, React Compiler
 
+### Community 105 - "Community 105"
+Cohesion: 0.12
+Nodes (16): exclude_words, groups, nuevo, usado, include_words, max_items_per_source, descuentosrata_all, mercadolibre_condition (+8 more)
+
 ### Community 182 - "Community 182"
 Cohesion: 0.26
 Nodes (9): _cache_get(), _cache_key(), _cache_set(), _collect(), count(), export(), preview(), _rows() (+1 more)
 
-### Community 183 - "Community 183"
-Cohesion: 0.41
-Nodes (11): build_suggestions(), _label_for_value(), _normalize(), Any, Sugerencia conservadora de categorías para búsqueda global (términos generales)., Elige categoría dominante por volumen; si hay empate, devuelve Todas ('')., _score_label(), suggest_by_label() (+3 more)
-
-### Community 185 - "Community 185"
-Cohesion: 0.47
-Nodes (3): export_results(), preview_results(), SearchPayload
+### Community 184 - "Community 184"
+Cohesion: 0.53
+Nodes (8): _group_config(), _load_config(), main(), _output_payload(), Any, Path, run(), _write_summary()
 
 ## Knowledge Gaps
-- **632 isolated node(s):** `PreToolUse`, `_inter`, `_jetbrainsMono`, `metadata`, `$schema` (+627 more)
+- **643 isolated node(s):** `PreToolUse`, `_inter`, `_jetbrainsMono`, `metadata`, `$schema` (+638 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **41 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **40 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `cn()` connect `Community 1` to `Community 64`, `Community 36`, `Community 40`, `Community 8`, `Community 11`, `Community 46`, `Community 15`, `Community 49`, `Community 50`, `Community 84`, `Community 55`, `Community 22`, `Community 54`, `Community 25`, `Community 59`, `Community 62`, `Community 63`?**
-  _High betweenness centrality (0.036) - this node is a cross-community bridge._
-- **Why does `SearchPayload` connect `Community 35` to `Community 12`?**
-  _High betweenness centrality (0.004) - this node is a cross-community bridge._
-- **Why does `SearchPayload` connect `Community 182` to `Community 12`?**
-  _High betweenness centrality (0.002) - this node is a cross-community bridge._
+  _High betweenness centrality (0.035) - this node is a cross-community bridge._
+- **Why does `CookiePayload` connect `Community 12` to `Community 4`?**
+  _High betweenness centrality (0.003) - this node is a cross-community bridge._
 - **What connects `PreToolUse`, `_inter`, `_jetbrainsMono` to the rest of the system?**
-  _680 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _691 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.07688828584350972 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05938037865748709 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
   _Cohesion score 0.05555555555555555 - nodes in this community are weakly interconnected._
 - **Should `Community 2` be split into smaller, more focused modules?**
   _Cohesion score 0.07831677381648158 - nodes in this community are weakly interconnected._
+- **Should `Community 3` be split into smaller, more focused modules?**
+  _Cohesion score 0.06883116883116883 - nodes in this community are weakly interconnected._
