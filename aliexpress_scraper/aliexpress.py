@@ -828,10 +828,21 @@ def _browser_cookies(cookie_file: str | None = None) -> list[dict[str, Any]]:
     return list(by_key.values())
 
 
-def _remember_session_cookies(cookies: list[dict[str, Any]]) -> None:
+def _remember_session_cookies(cookies: list[dict[str, Any]], cookie_file: str | None = None) -> None:
     with _SESSION_COOKIE_LOCK:
         _SESSION_COOKIES.clear()
         _SESSION_COOKIES.extend(dict(cookie) for cookie in cookies)
+    
+    # Persistimos al archivo para que la sesion sobreviva entre ejecuciones
+    explicit = cookie_file or os.getenv("ALIEXPRESS_COOKIE_FILE")
+    target_path = explicit if explicit else DEFAULT_COOKIE_FILES[0]
+    
+    try:
+        # Guardamos en formato JSON ya que _parse_cookie_file lo soporta
+        with open(target_path, "w", encoding="utf-8") as f:
+            json.dump(cookies, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"DEBUG: No se pudo persistir cookies de AliExpress: {e}")
 
 
 def _discount_from_node(node: dict[str, Any]) -> int:

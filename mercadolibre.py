@@ -94,6 +94,8 @@ DEFAULT_PAGE_SIZE = 48
 MAX_EMPTY_PAGES = 5
 REQUEST_RETRIES = 4
 REQUEST_COOKIE_HEADER: str | None = None
+REQUEST_COOKIE_FILE: str | None = None
+_COOKIE_PERSIST_LOCK = threading.Lock()
 ROOT = Path(__file__).resolve().parent
 PAGE_CACHE_TTL_SECONDS = 300
 PAGE_CACHE: dict[str, tuple[float, str]] = {}
@@ -275,6 +277,13 @@ def _throttle_request() -> None:
 
 
 def _read_html(opener: Any, url: str, timeout: int) -> str:
+    # Capturamos el cookie jar si existe en el opener para persistencia
+    jar = None
+    for h in opener.handlers:
+        if isinstance(h, HTTPCookieProcessor):
+            jar = h.cookiejar
+            break
+
     headers = {
         "User-Agent": USER_AGENT,
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
@@ -296,6 +305,8 @@ def _read_html(opener: Any, url: str, timeout: int) -> str:
     _throttle_request()
     try:
         with opener.open(req, timeout=timeout) as response:
+            if jar:
+                _persist_cookies(jar)
             body = response.read()
             html = body.decode("utf-8", errors="ignore")
             _log_http_event(
@@ -384,13 +395,15 @@ def _parse_cookie_pairs(raw: str) -> str:
 
 
 def configure_cookie_header(cookie_inline: str | None, cookie_file: str | None) -> None:
-    global REQUEST_COOKIE_HEADER
+    global REQUEST_COOKIE_HEADER, REQUEST_COOKIE_FILE
     env_cookie = os.getenv("ML_COOKIE", "").lstrip("\ufeff").strip()
     content = ""
+    REQUEST_COOKIE_FILE = None
     if cookie_file:
         cookie_path = Path(cookie_file)
         if not cookie_path.is_absolute():
             cookie_path = ROOT / cookie_path
+        REQUEST_COOKIE_FILE = str(cookie_path)
         if cookie_path.exists():
             content = cookie_path.read_text(encoding="utf-8").lstrip("\ufeff").strip()
         elif env_cookie:
@@ -401,6 +414,7 @@ def configure_cookie_header(cookie_inline: str | None, cookie_file: str | None) 
         content = cookie_inline.lstrip("\ufeff").strip()
     elif env_cookie:
         content = env_cookie
+    
     REQUEST_COOKIE_HEADER = _parse_cookie_pairs(content) if content else None
     pair_count = len(REQUEST_COOKIE_HEADER.split(";")) if REQUEST_COOKIE_HEADER else 0
     _log_http_event(
@@ -408,17 +422,51 @@ def configure_cookie_header(cookie_inline: str | None, cookie_file: str | None) 
         configured=bool(REQUEST_COOKIE_HEADER),
         valid_format=pair_count > 0,
         pair_count=pair_count,
+        file=REQUEST_COOKIE_FILE
     )
 
 
 def clear_cookie_header() -> None:
-    global REQUEST_COOKIE_HEADER
+    global REQUEST_COOKIE_HEADER, REQUEST_COOKIE_FILE
     REQUEST_COOKIE_HEADER = None
+    REQUEST_COOKIE_FILE = None
     _log_http_event(event="cookie_config", configured=False, valid_format=True, pair_count=0, reason="fallback")
 
 
 def has_cookie_header() -> bool:
     return bool(REQUEST_COOKIE_HEADER)
+
+
+def _persist_cookies(jar: http.cookiejar.CookieJar) -> None:
+    """Extrae cookies del jar y actualiza el archivo cookies.txt si está configurado."""
+    global REQUEST_COOKIE_HEADER
+    if not REQUEST_COOKIE_FILE:
+        return
+    
+    new_pairs: dict[str, str] = {}
+    # Primero cargamos las actuales para no perder nada que el servidor no haya enviado ahora
+    if REQUEST_COOKIE_HEADER:
+        for p in REQUEST_COOKIE_HEADER.split(";"):
+            if "=" in p:
+                k, v = p.strip().split("=", 1)
+                new_pairs[k] = v
+
+    # Actualizamos con lo nuevo del servidor
+    updated = False
+    for cookie in jar:
+        if cookie.value and new_pairs.get(cookie.name) != cookie.value:
+            new_pairs[cookie.name] = cookie.value
+            updated = True
+    
+    if updated:
+        new_header = "; ".join([f"{k}={v}" for k, v in new_pairs.items()])
+        with _COOKIE_PERSIST_LOCK:
+            try:
+                Path(REQUEST_COOKIE_FILE).write_text(new_header, encoding="utf-8")
+                REQUEST_COOKIE_HEADER = new_header
+                _log_http_event(event="cookie_persist", success=True, file=REQUEST_COOKIE_FILE)
+            except Exception as e:
+                _log_http_event(event="cookie_persist", success=False, error=str(e))
 
 
 def fetch_url_html(url: str, timeout: int = 20) -> str:

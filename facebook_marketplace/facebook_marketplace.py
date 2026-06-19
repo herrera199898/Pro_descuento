@@ -258,30 +258,82 @@ def resolve_search_location(options: SearchOptions) -> tuple[float | None, float
     return None, None, ""
 
 
+def _auto_import_fb_cookies(output_path: Path) -> bool:
+    """Intenta importar cookies de Facebook desde Chrome o Edge automáticamente."""
+    try:
+        import browser_cookie3
+        for browser_name in ["chrome", "edge"]:
+            try:
+                if browser_name == "chrome":
+                    jar = browser_cookie3.chrome(domain_name=".facebook.com")
+                else:
+                    jar = browser_cookie3.edge(domain_name=".facebook.com")
+                
+                cookies = []
+                for cookie in jar:
+                    expires = -1
+                    try:
+                        expires = float(cookie.expires) if cookie.expires else -1
+                    except Exception:
+                        expires = -1
+
+                    same_site = "Lax"
+                    if str(getattr(cookie, "_rest", {}).get("SameSite", "")).lower() == "none":
+                        same_site = "None"
+                    elif str(getattr(cookie, "_rest", {}).get("SameSite", "")).lower() == "strict":
+                        same_site = "Strict"
+
+                    cookies.append({
+                        "name": cookie.name,
+                        "value": cookie.value,
+                        "domain": cookie.domain,
+                        "path": cookie.path or "/",
+                        "expires": expires,
+                        "httpOnly": bool(cookie.has_nonstandard_attr("HttpOnly")),
+                        "secure": bool(cookie.secure),
+                        "sameSite": same_site,
+                    })
+
+                has_c_user = any(c["name"] == "c_user" and c["value"] for c in cookies)
+                if has_c_user:
+                    payload = {"cookies": cookies, "origins": []}
+                    output_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+                    return True
+            except Exception:
+                continue
+    except ImportError:
+        pass
+    return False
+
+
 def validate_storage_state(storage_state: str | None) -> None:
     raw = str(storage_state or "").strip()
-    if not raw:
-        return
-
-    state_path = Path(raw)
+    state_path = Path(raw) if raw else ROOT / "storage_state.json"
+    
     if not state_path.exists():
-        raise FileNotFoundError(f"No existe storage_state: {state_path}")
+        if _auto_import_fb_cookies(state_path):
+            print(f"Sesión de Facebook importada automáticamente en {state_path}", file=sys.stderr)
+        else:
+            raise FileNotFoundError(f"No existe storage_state: {state_path} y no se pudo importar del navegador.")
 
-    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    try:
+        payload = json.loads(state_path.read_text(encoding="utf-8"))
+    except Exception:
+        if _auto_import_fb_cookies(state_path):
+            payload = json.loads(state_path.read_text(encoding="utf-8"))
+        else:
+            raise RuntimeError(f"Error al leer storage_state: {state_path} y falla el auto-import.")
+
     cookies = payload.get("cookies") or []
-    origins = payload.get("origins") or []
     has_c_user = any(cookie.get("name") == "c_user" and cookie.get("value") for cookie in cookies)
+    
     if not has_c_user:
+        if _auto_import_fb_cookies(state_path):
+            print(f"Sesión de Facebook re-importada automáticamente en {state_path}", file=sys.stderr)
+            return
         raise RuntimeError(
             "El storage_state no tiene sesion autenticada de Facebook. "
-            "Vuelve a generar storage_state.json con login completo."
-        )
-    if len(cookies) <= 2 and not origins:
-        raise RuntimeError(
-            "El storage_state actual solo contiene cookies minimas (por ejemplo c_user/xs) y no un "
-            "estado completo de Playwright. Ese archivo no esta sirviendo para Marketplace. "
-            "Regeneralo con `python login_facebook.py`, entra manualmente a Marketplace antes de presionar Enter, "
-            "o deja vacio 'Archivo storage state' para probar con un perfil persistente valido."
+            "Abre Facebook en Chrome/Edge o usa login_facebook.py."
         )
 
 
